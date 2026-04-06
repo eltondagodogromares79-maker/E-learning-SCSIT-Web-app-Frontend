@@ -16,6 +16,8 @@ export function useCreateQuiz() {
       attempt_limit: number;
       due_date: string;
       ai_grade_on_submit?: boolean;
+      security_level?: 'normal' | 'strict';
+      is_available?: boolean;
     }) => quizService.create(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['quizzes'] });

@@ -353,6 +353,10 @@ export default function TeacherClassDetailPage() {
   const markAttendance = useMarkAttendance(activeAttendanceSessionId);
   const endAttendanceSession = useEndAttendanceSession();
   const startAttendanceSession = useStartAttendanceSession();
+  const activeSession = useMemo(
+    () => attendanceSessions.find((session) => session.id === activeAttendanceSessionId),
+    [attendanceSessions, activeAttendanceSessionId]
+  );
 
   const lessonsCount = filteredLessons.length;
   const assignmentsCount = filteredAssignments.length;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -13,7 +13,7 @@ import { useQuizAttempts } from '@/features/quizzes/hooks/useQuizAttempts';
 import { quizService } from '@/features/quizzes/services/quizService';
 import type { QuizProctorLog } from '@/types';
 
-export default function StudentQuizAttemptsPage() {
+function StudentQuizAttemptsPageInner() {
   const searchParams = useSearchParams();
   const filterQuizId = searchParams.get('quizId') ?? '';
   const { data: attempts = [] } = useQuizAttempts();
@@ -251,5 +251,13 @@ export default function StudentQuizAttemptsPage() {
         </Dialog>
       </div>
     </AppShell>
+  );
+}
+
+export default function StudentQuizAttemptsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[40vh]" />}>
+      <StudentQuizAttemptsPageInner />
+    </Suspense>
   );
 }

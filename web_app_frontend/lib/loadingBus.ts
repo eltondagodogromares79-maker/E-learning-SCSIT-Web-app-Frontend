@@ -19,6 +19,8 @@ export const loadingBus = {
   subscribe(listener: Listener) {
     listeners.add(listener);
     listener(pending);
-    return () => listeners.delete(listener);
+    return () => {
+      listeners.delete(listener);
+    };
   },
 };

@@ -14,6 +14,8 @@ export function useAiGenerateQuiz() {
       time_limit_minutes?: number;
       attempt_limit?: number;
       ai_grade_on_submit?: boolean;
+      security_level?: 'normal' | 'strict';
+      is_available?: boolean;
     }) => quizService.aiPreview(payload),
     onSuccess: async () => {
       showToast({ title: 'Draft ready', description: 'Review the AI draft before saving.', variant: 'success' });

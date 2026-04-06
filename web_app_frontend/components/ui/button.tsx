@@ -36,6 +36,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLElement> {
   size?: ButtonSize;
   as?: React.ElementType;
   href?: string;
+  target?: string;
+  rel?: string;
 }
 
 export const Button = React.forwardRef<HTMLElement, ButtonProps>(

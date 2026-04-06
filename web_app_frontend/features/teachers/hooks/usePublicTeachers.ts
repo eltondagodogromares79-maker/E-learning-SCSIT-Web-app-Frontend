@@ -5,6 +5,6 @@ export function usePublicTeachers(params?: { search?: string; page?: number; rol
   return useQuery<PublicTeacherResponse>({
     queryKey: ['public', 'teachers', params?.search ?? '', params?.page ?? 1, params?.role ?? ''],
     queryFn: () => publicTeacherService.list(params),
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 }

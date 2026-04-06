@@ -58,7 +58,7 @@ export default function StudentSubjectsPage() {
       .map((quiz) => ({
         type: 'Quiz',
         title: quiz.title,
-        due: new Date(quiz.due_date).getTime(),
+        due: quiz.due_date ? new Date(quiz.due_date).getTime() : Number.NaN,
       }));
     const upcoming = [...upcomingAssignments, ...upcomingQuizzes].filter((item) => !Number.isNaN(item.due));
     if (upcoming.length === 0) return null;

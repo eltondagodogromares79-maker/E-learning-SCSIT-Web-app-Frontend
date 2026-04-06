@@ -226,6 +226,9 @@ export const quizService = {
       due_date: string;
       questions: Array<Record<string, any>>;
       total_points: number;
+      ai_grade_on_submit?: boolean;
+      security_level?: 'normal' | 'strict';
+      is_available?: boolean;
     };
   },
   async aiSave(payload: {

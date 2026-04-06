@@ -19,10 +19,11 @@ export function useNotifications() {
   const [connected, setConnected] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
-  const notificationsQuery = useInfiniteQuery({
+  const notificationsQuery = useInfiniteQuery<{ results: Notification[]; nextPage?: number | null }>({
     queryKey: ['notifications'],
     queryFn: ({ pageParam = 1 }) => notificationService.list(Number(pageParam)),
     getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+    initialPageParam: 1,
     refetchOnWindowFocus: false,
   });
 

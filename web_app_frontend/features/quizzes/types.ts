@@ -1,1 +1,1 @@
-export type { Quiz, Question, Choice, QuizSubmission, QuizAnswer } from '@/types';
+export type { Quiz, Question, Choice, QuizAttempt, QuizAnswer } from '@/types';

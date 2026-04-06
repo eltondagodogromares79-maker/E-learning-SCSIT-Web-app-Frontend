@@ -66,6 +66,6 @@ export function DialogDescription({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-neutral-500">{children}</p>;
 }
 
-export function DialogFooter({ children }: { children: React.ReactNode }) {
-  return <div className="mt-6 flex items-center justify-end gap-2">{children}</div>;
+export function DialogFooter({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={`mt-6 flex items-center justify-end ${className ?? ''}`.trim()}>{children}</div>;
 }

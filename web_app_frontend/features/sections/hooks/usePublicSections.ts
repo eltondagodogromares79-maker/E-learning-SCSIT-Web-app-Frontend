@@ -5,6 +5,6 @@ export function usePublicSections(params?: { search?: string; page?: number }) {
   return useQuery<PublicSectionResponse>({
     queryKey: ['public', 'sections', params?.search ?? '', params?.page ?? 1],
     queryFn: () => publicSectionService.list(params),
-    keepPreviousData: true,
+    placeholderData: (prev) => prev,
   });
 }

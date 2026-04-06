@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -18,7 +18,7 @@ import { useAiSaveAssignment } from '@/features/assignments/hooks/useAiSaveAssig
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { useToast } from '@/components/ui/toast';
 
-export default function TeacherAssignmentsPage() {
+function TeacherAssignmentsPageInner() {
   const { data: assignments = [] } = useAssignments();
   const { data: sectionSubjects = [] } = useSectionSubjects();
   const createAssignment = useCreateAssignment();
@@ -428,5 +428,13 @@ export default function TeacherAssignmentsPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function TeacherAssignmentsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[40vh]" />}>
+      <TeacherAssignmentsPageInner />
+    </Suspense>
   );
 }

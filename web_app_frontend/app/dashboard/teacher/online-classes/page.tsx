@@ -103,7 +103,7 @@ export default function TeacherOnlineClassesPage() {
                 <option value="">Select a class</option>
                 {sectionSubjects.map((subject) => (
                   <option key={subject.id} value={subject.id}>
-                    {subject.subject_code} — {subject.section_name}
+                    {subject.subject_name} — {subject.section_name}
                   </option>
                 ))}
               </select>

@@ -17,6 +17,8 @@ export function useAiSaveQuiz() {
       attempt_limit?: number;
       questions?: Array<Record<string, any>>;
       ai_grade_on_submit?: boolean;
+      security_level?: 'normal' | 'strict';
+      is_available?: boolean;
     }) => quizService.aiSave(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['quizzes'] });

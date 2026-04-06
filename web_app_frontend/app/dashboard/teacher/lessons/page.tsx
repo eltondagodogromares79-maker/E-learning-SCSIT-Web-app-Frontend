@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
@@ -19,7 +19,7 @@ import { useToast } from '@/components/ui/toast';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { lessonService } from '@/features/lessons/services/lessonService';
 
-export default function TeacherLessonsPage() {
+function TeacherLessonsPageInner() {
   const { data: lessons = [] } = useLessons();
   const { data: sectionSubjects = [] } = useSectionSubjects();
   const aiGenerate = useAiGenerateLesson();
@@ -443,5 +443,13 @@ export default function TeacherLessonsPage() {
         </Card>
       </div>
     </AppShell>
+  );
+}
+
+export default function TeacherLessonsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[40vh]" />}>
+      <TeacherLessonsPageInner />
+    </Suspense>
   );
 }

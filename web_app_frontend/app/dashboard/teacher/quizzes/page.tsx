@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
@@ -21,7 +21,7 @@ import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm';
 
-export default function TeacherQuizzesPage() {
+function TeacherQuizzesPageInner() {
   const { data: quizzes = [] } = useQuizzes();
   const { data: sectionSubjects = [] } = useSectionSubjects();
   const createQuiz = useCreateQuiz();
@@ -762,5 +762,13 @@ export default function TeacherQuizzesPage() {
         </Dialog>
       </div>
     </AppShell>
+  );
+}
+
+export default function TeacherQuizzesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[40vh]" />}>
+      <TeacherQuizzesPageInner />
+    </Suspense>
   );
 }

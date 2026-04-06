@@ -527,12 +527,13 @@ export function ChatPanel() {
 
         if (room === activeRoomRef.current && payload.from !== userIdRef.current) {
           chatService.markRead(room, payload.sent_at).catch(() => undefined);
-          if (userIdRef.current) {
+          const currentUserId = userIdRef.current;
+          if (currentUserId) {
             setReadReceipts((prev) => {
               const next = { ...prev };
               const existing = next[room] ?? [];
-              const updated = existing.filter((receipt) => receipt.user !== userIdRef.current);
-              updated.push({ user: userIdRef.current, last_read_at: payload.sent_at });
+              const updated = existing.filter((receipt) => receipt.user !== currentUserId);
+              updated.push({ user: currentUserId, last_read_at: payload.sent_at });
               next[room] = updated;
               return next;
             });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
@@ -18,7 +18,7 @@ function useQuery() {
   return params.get('q') ?? '';
 }
 
-export default function TeacherSearchPage() {
+function TeacherSearchPageInner() {
   const query = useQuery();
   const normalized = query.trim().toLowerCase();
   const { data: sectionSubjects = [] } = useSectionSubjects();
@@ -183,5 +183,13 @@ export default function TeacherSearchPage() {
         </section>
       </div>
     </AppShell>
+  );
+}
+
+export default function TeacherSearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[40vh]" />}>
+      <TeacherSearchPageInner />
+    </Suspense>
   );
 }

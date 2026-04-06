@@ -10,6 +10,8 @@ export interface LoginPayload {
 export interface LoginResponse {
   user?: User;
   detail?: string;
+  access_token?: string;
+  refresh_token?: string;
 }
 
 export interface ChangePasswordPayload {

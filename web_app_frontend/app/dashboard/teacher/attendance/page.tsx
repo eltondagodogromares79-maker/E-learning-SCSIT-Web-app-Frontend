@@ -319,7 +319,7 @@ export default function TeacherAttendancePage() {
               ) : null}
             </CardHeader>
             <CardContent className="space-y-4">
-              {!activeSessionId ? (
+              {!activeSessionId || !activeSession ? (
                 <div className="text-sm text-neutral-500">Select a session to mark attendance.</div>
               ) : (
                 <>

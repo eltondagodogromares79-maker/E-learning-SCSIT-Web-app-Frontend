@@ -379,6 +379,7 @@ export default function QuizAttemptReviewPage() {
                               size="sm"
                               variant="outline"
                               onClick={async () => {
+                                if (!attempt) return;
                                 const raw = scoreDrafts[answer.id];
                                 const value = Number(raw);
                                 const feedback = answerFeedbackDrafts[answer.id] ?? '';
@@ -406,6 +407,7 @@ export default function QuizAttemptReviewPage() {
                               size="sm"
                               variant="secondary"
                               onClick={async () => {
+                                if (!attempt) return;
                                 setPreviewAnswerId(answer.id);
                                 setPreviewScore(null);
                                 setPreviewFeedback('');
