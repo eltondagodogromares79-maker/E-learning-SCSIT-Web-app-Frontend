@@ -100,7 +100,7 @@ export default function AboutPage() {
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 8px 40px rgba(47,111,246,0.06)' }}
           >
             <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full opacity-40" style={{ border: '1px solid var(--border)' }} />
-            <div className="relative space-y-0 divide-y" style={{ divideColor: 'var(--border)' }}>
+            <div className="relative space-y-0 divide-y divide-[var(--border)]">
               {facts.map((item) => (
                 <div key={item.label} className="flex items-center justify-between py-4">
                   <span className="text-sm" style={{ color: 'rgba(11,26,53,0.55)' }}>{item.label}</span>

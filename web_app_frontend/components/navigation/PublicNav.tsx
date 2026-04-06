@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 
@@ -37,10 +37,10 @@ export function PublicNav() {
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-3.5">
         <Link href="/" className="flex items-center gap-3">
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl"
             style={{ background: 'linear-gradient(135deg, #2f6ff6, #1a3a8f)', boxShadow: '0 4px 12px rgba(47,111,246,0.3)' }}
           >
-            <GraduationCap className="h-4.5 w-4.5 text-white" style={{ height: '1.1rem', width: '1.1rem' }} />
+            <Image src="/logo.png" alt="SCSIT NEXUS logo" width={28} height={28} className="h-7 w-7" priority />
           </div>
           <span className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>SCSIT NEXUS</span>
         </Link>

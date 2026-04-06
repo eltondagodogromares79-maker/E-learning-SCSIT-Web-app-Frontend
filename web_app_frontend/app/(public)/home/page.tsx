@@ -77,12 +77,11 @@ export default function HomePage() {
       {/* Stats bar */}
       <section className="relative z-10 mx-auto -mt-6 w-full max-w-5xl px-6">
         <div
-          className="grid grid-cols-3 divide-x overflow-hidden rounded-2xl shadow-lg"
+          className="grid grid-cols-3 divide-x divide-[var(--border)] overflow-hidden rounded-2xl shadow-lg"
           style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
             boxShadow: '0 8px 40px rgba(47,111,246,0.1)',
-            divideColor: 'var(--border)',
           }}
         >
           {stats.map((s) => (

@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, ChevronLeft, ChevronRight, Users, BookOpen, LayoutGrid } from 'lucide-react';
 
-function Avatar({ person }: { person: { first_name?: string; last_name?: string; profile_picture?: string } }) {
+function Avatar({ person }: { person: { first_name?: string; last_name?: string; profile_picture?: string | null } }) {
   const initials = `${person.first_name?.[0] ?? ''}${person.last_name?.[0] ?? ''}`.toUpperCase();
   return (
     <div

@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { GraduationCap, Mail, KeyRound, ShieldCheck, Loader2 } from 'lucide-react';
+import { Mail, KeyRound, ShieldCheck, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,8 +98,8 @@ export default function ForgotPassword() {
           className="flex flex-col justify-between rounded-3xl border border-neutral-200 bg-white p-10 shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--brand-blue)]">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--brand-blue)]">
+              <Image src="/logo.png" alt="SCSIT NEXUS logo" width={32} height={32} className="h-8 w-8" priority />
             </div>
             <span className="text-2xl font-semibold text-neutral-900">SCSIT NEXUS</span>
           </div>

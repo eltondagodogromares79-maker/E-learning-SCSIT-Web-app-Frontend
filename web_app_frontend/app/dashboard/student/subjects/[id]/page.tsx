@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useSubjectContent } from '@/features/subjects/hooks/useSubjectContent';
 import { useAssignmentSubmissions } from '@/features/assignments/hooks/useAssignmentSubmissions';
+import { useQuizAttempts } from '@/features/quizzes/hooks/useQuizAttempts';
 
 export default function StudentSubjectDetailPage() {
   const params = useParams();
@@ -21,9 +22,52 @@ export default function StudentSubjectDetailPage() {
 
   const { data, isLoading } = useSubjectContent(subjectId);
   const { data: submissions = [] } = useAssignmentSubmissions();
+  const { data: quizAttempts = [] } = useQuizAttempts();
   const submissionLookup = Object.fromEntries(
     submissions.map((submission) => [submission.assignment_id, submission])
   );
+  const quizLookup = Object.fromEntries((data?.quizzes ?? []).map((quiz) => [quiz.id, quiz]));
+
+  const subjectQuizAttempts = useMemo(() => {
+    if (!data?.quizzes?.length) return [];
+    const quizIds = new Set(data.quizzes.map((quiz) => quiz.id));
+    return quizAttempts
+      .filter((attempt) => quizIds.has(attempt.quiz_id))
+      .sort((a, b) => {
+        const aTime = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+        const bTime = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [data?.quizzes, quizAttempts]);
+
+  const assignmentAverage = useMemo(() => {
+    if (!data?.assignments?.length) return null;
+    const scored = data.assignments
+      .map((assignment) => {
+        const submission = submissionLookup[assignment.id];
+        if (!submission || typeof submission.score !== 'number') return null;
+        if (!assignment.total_points) return null;
+        return Math.max(0, Math.min(1, submission.score / assignment.total_points));
+      })
+      .filter((value): value is number => value !== null);
+    if (scored.length === 0) return null;
+    return Math.round((scored.reduce((sum, value) => sum + value, 0) / scored.length) * 100);
+  }, [data?.assignments, submissionLookup]);
+
+  const quizAverage = useMemo(() => {
+    if (!subjectQuizAttempts.length) return null;
+    const scored = subjectQuizAttempts
+      .map((attempt) => {
+        const quiz = quizLookup[attempt.quiz_id];
+        if (!quiz?.total_points) return null;
+        const score = typeof attempt.score === 'number' ? attempt.score : attempt.raw_score;
+        if (typeof score !== 'number') return null;
+        return Math.max(0, Math.min(1, score / quiz.total_points));
+      })
+      .filter((value): value is number => value !== null);
+    if (scored.length === 0) return null;
+    return Math.round((scored.reduce((sum, value) => sum + value, 0) / scored.length) * 100);
+  }, [quizLookup, subjectQuizAttempts]);
 
   return (
     <AppShell title="Student Dashboard" subtitle="Subject" navItems={studentNav} requiredRole="student">
@@ -31,7 +75,7 @@ export default function StudentSubjectDetailPage() {
         <PageHeader
           title={data?.subject.name ?? 'Subject details'}
           description={data?.subject.code ?? 'View lessons, assignments, and quizzes.'}
-          actions={<Button variant="outline">View progress</Button>}
+          actions={<Button variant="outline" as={Link} href="#records">View records</Button>}
         />
 
         {isLoading ? (
@@ -229,6 +273,90 @@ export default function StudentSubjectDetailPage() {
                     ))
                   ) : (
                     <div className="text-sm text-neutral-500">No quizzes found.</div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <section id="records" className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance snapshot</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3">
+                  <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
+                    <div className="text-xs text-neutral-500">Assignment average</div>
+                    <div className="mt-1 text-2xl font-semibold text-neutral-900">
+                      {assignmentAverage !== null ? `${assignmentAverage}%` : '—'}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
+                    <div className="text-xs text-neutral-500">Quiz average</div>
+                    <div className="mt-1 text-2xl font-semibold text-neutral-900">
+                      {quizAverage !== null ? `${quizAverage}%` : '—'}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Assignment records</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {data?.assignments.length ? (
+                    data.assignments.map((assignment) => {
+                      const submission = submissionLookup[assignment.id];
+                      const score =
+                        submission && typeof submission.score === 'number'
+                          ? `${submission.score} / ${assignment.total_points}`
+                          : 'Not graded';
+                      return (
+                        <div key={assignment.id} className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
+                          <div className="text-sm font-semibold text-neutral-900">{assignment.title}</div>
+                          <div className="mt-1 text-xs text-neutral-500">
+                            {submission?.submitted_at ? `Submitted ${new Date(submission.submitted_at).toLocaleDateString()}` : 'Not submitted'}
+                          </div>
+                          <div className="mt-2 text-xs text-neutral-600">Score: {score}</div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-sm text-neutral-500">No assignments found.</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quiz records</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {subjectQuizAttempts.length ? (
+                    subjectQuizAttempts.map((attempt) => {
+                      const quiz = quizLookup[attempt.quiz_id];
+                      const score =
+                        typeof attempt.score === 'number'
+                          ? attempt.score
+                          : typeof attempt.raw_score === 'number'
+                            ? attempt.raw_score
+                            : null;
+                      return (
+                        <div key={attempt.id} className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
+                          <div className="text-sm font-semibold text-neutral-900">{quiz?.title ?? attempt.quiz_title ?? 'Quiz'}</div>
+                          <div className="mt-1 text-xs text-neutral-500">
+                            {attempt.submitted_at
+                              ? `Submitted ${new Date(attempt.submitted_at).toLocaleDateString()}`
+                              : 'In progress'}
+                          </div>
+                          <div className="mt-2 text-xs text-neutral-600">
+                            Score: {score ?? 'Not graded'}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-sm text-neutral-500">No quiz attempts yet.</div>
                   )}
                 </CardContent>
               </Card>

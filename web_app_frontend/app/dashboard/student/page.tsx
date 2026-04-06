@@ -10,19 +10,54 @@ import { useSubjects } from '@/features/subjects/hooks/useSubjects';
 import { useLessons } from '@/features/lessons/hooks/useLessons';
 import { useAssignments } from '@/features/assignments/hooks/useAssignments';
 import { useQuizzes } from '@/features/quizzes/hooks/useQuizzes';
-import { useGrades } from '@/features/grades/hooks/useGrades';
 import { useProgress } from '@/features/progress/hooks/useProgress';
 import { useStudentStats } from '@/features/dashboard/hooks/useDashboardStats';
+import { useAssignmentSubmissions } from '@/features/assignments/hooks/useAssignmentSubmissions';
+import { useQuizAttempts } from '@/features/quizzes/hooks/useQuizAttempts';
 
 export default function StudentDashboardPage() {
   const { data: subjects = [] } = useSubjects();
   const { data: lessons = [] } = useLessons();
   const { data: assignments = [] } = useAssignments();
   const { data: quizzes = [] } = useQuizzes();
-  const { data: grades = [] } = useGrades();
   const { data: progress } = useProgress();
   const { data: stats = [] } = useStudentStats();
+  const { data: submissions = [] } = useAssignmentSubmissions();
+  const { data: quizAttempts = [] } = useQuizAttempts();
   const subjectLookup = Object.fromEntries(subjects.map((subject) => [subject.code, subject.name]));
+
+  const assignmentLookup = Object.fromEntries(assignments.map((assignment) => [assignment.id, assignment]));
+  const quizLookup = Object.fromEntries(quizzes.map((quiz) => [quiz.id, quiz]));
+
+  const recentRecords = [
+    ...submissions
+      .filter((submission) => submission.graded_at || typeof submission.score === 'number')
+      .map((submission) => {
+        const assignment = assignmentLookup[submission.assignment_id];
+        return {
+          id: `assignment-${submission.id}`,
+          type: 'Assignment',
+          title: assignment?.title ?? 'Assignment',
+          subject: assignment?.subject_code ? (subjectLookup[assignment.subject_code] ?? assignment.subject_code) : '—',
+          score: typeof submission.score === 'number' ? submission.score : null,
+          at: submission.graded_at ?? submission.submitted_at ?? '',
+        };
+      }),
+    ...quizAttempts.map((attempt) => {
+      const quiz = quizLookup[attempt.quiz_id];
+      return {
+        id: `quiz-${attempt.id}`,
+        type: 'Quiz',
+        title: quiz?.title ?? attempt.quiz_title ?? 'Quiz',
+        subject: quiz?.subject_name ?? '—',
+        score: typeof attempt.score === 'number' ? attempt.score : attempt.raw_score ?? null,
+        at: attempt.submitted_at ?? attempt.started_at ?? '',
+      };
+    }),
+  ]
+    .filter((record) => record.at)
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, 5);
   return (
     <AppShell title="Student Dashboard" subtitle="Welcome back" navItems={studentNav} requiredRole="student">
       <div className="space-y-6">
@@ -54,9 +89,23 @@ export default function StudentDashboardPage() {
               <CardTitle>Progress snapshot</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
-                <div className="text-xs text-neutral-500">Completion rate</div>
-                <div className="text-2xl font-semibold text-neutral-900">{progress?.completionRate ?? 0}%</div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
+                  <div className="text-xs text-neutral-500">Completion rate</div>
+                  <div className="text-2xl font-semibold text-neutral-900">{progress?.completionRate ?? 0}%</div>
+                </div>
+                <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
+                  <div className="text-xs text-neutral-500">On‑time submissions</div>
+                  <div className="text-2xl font-semibold text-neutral-900">{progress?.onTimeSubmissions ?? 0}%</div>
+                </div>
+                <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
+                  <div className="text-xs text-neutral-500">Attendance rate</div>
+                  <div className="text-2xl font-semibold text-neutral-900">{progress?.attendanceRate ?? 0}%</div>
+                </div>
+                <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
+                  <div className="text-xs text-neutral-500">Weekly streak</div>
+                  <div className="text-2xl font-semibold text-neutral-900">{progress?.streakWeeks ?? 0} weeks</div>
+                </div>
               </div>
               <div className="grid gap-3">
                 {progress?.goals?.map((goal) => (
@@ -119,27 +168,34 @@ export default function StudentDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card id="grades">
+          <Card id="records">
             <CardHeader>
-              <CardTitle>Recent grades</CardTitle>
+              <CardTitle>Recent records</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Grade</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Score</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {grades.map((grade) => (
-                    <TableRow key={grade.id}>
-                      <TableCell>{subjectLookup[grade.subject_code] ?? grade.subject_code}</TableCell>
-                      <TableCell>{grade.school_year ?? '—'}</TableCell>
-                      <TableCell>{grade.grade}</TableCell>
+                  {recentRecords.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell>{record.type}</TableCell>
+                      <TableCell>{record.title}</TableCell>
+                      <TableCell>{record.score ?? 'Pending'}</TableCell>
                     </TableRow>
                   ))}
+                  {recentRecords.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center text-sm text-neutral-500">
+                        No graded records yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
                 </TableBody>
               </Table>
             </CardContent>

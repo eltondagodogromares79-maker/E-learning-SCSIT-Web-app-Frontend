@@ -28,8 +28,7 @@ export const studentNav: NavItem[] = [
   { label: 'Online Classes', href: '/dashboard/student/online-classes', icon: 'Video' },
   { label: 'Attendance', href: '/dashboard/student/attendance', icon: 'ClipboardList' },
   { label: 'Transcript', href: '/dashboard/student/transcript', icon: 'FileText' },
-  { label: 'Grades', href: '/dashboard/student/grades', icon: 'ChartBar' },
-  { label: 'Progress', href: '/dashboard/student#progress', icon: 'GraduationCap' },
+  { label: 'Progress', href: '/dashboard/student/progress', icon: 'GraduationCap' },
 ];
 
 export const teacherNav: NavItem[] = [

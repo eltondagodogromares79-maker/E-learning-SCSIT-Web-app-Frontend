@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { GraduationCap, Mail, Eye, EyeOff, Loader2, BookOpen, Users, Award, ArrowLeft } from 'lucide-react';
+import { Mail, Eye, EyeOff, Loader2, BookOpen, Users, Award, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,8 +93,8 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-            <GraduationCap className="h-6 w-6 text-white" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+            <Image src="/logo.png" alt="SCSIT NEXUS logo" width={36} height={36} className="h-9 w-9" priority />
           </div>
           <span className="text-xl font-semibold text-white">SCSIT NEXUS</span>
         </div>
@@ -159,8 +160,8 @@ export default function LoginPage() {
         <div className="flex flex-1 flex-col items-center justify-center">
         {/* Mobile logo */}
         <div className="mb-8 flex items-center gap-3 lg:hidden">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'var(--brand-blue)' }}>
-            <GraduationCap className="h-5 w-5 text-white" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: 'var(--brand-blue)' }}>
+            <Image src="/logo.png" alt="SCSIT NEXUS logo" width={28} height={28} className="h-7 w-7" priority />
           </div>
           <span className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>SCSIT NEXUS</span>
         </div>
@@ -176,7 +177,7 @@ export default function LoginPage() {
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
           >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              {error && (
+              {/* {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -185,7 +186,7 @@ export default function LoginPage() {
                 >
                   {error}
                 </motion.div>
-              )}
+              )} */}
 
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email address</Label>
