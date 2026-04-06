@@ -1,0 +1,35 @@
+import type { User } from '@/types';
+
+export const mockTeachers: User[] = [
+  {
+    id: 'e7b3e2b7-fd07-4dfb-9f0b-1a81c2a10b2b',
+    first_name: 'Anton',
+    last_name: 'Cruz',
+    email: 'anton.cruz@eduflow.edu',
+    role: 'teacher',
+    employee_id: 'EMP-2019-455',
+    phone_number: '+63 933 220 1188',
+    address: 'Pasig City, PH',
+    profile_picture: '',
+    is_active: true,
+    is_staff: true,
+    date_joined: '2019-05-15T08:00:00Z',
+    updated_at: '2025-02-12T10:30:00Z',
+  },
+  {
+    id: 'f2d1b3c9-2ff6-4c9b-8c21-4da45e8a2310',
+    first_name: 'Rhea',
+    last_name: 'Delos',
+    middle_name: 'P.',
+    email: 'rhea.delos@eduflow.edu',
+    role: 'teacher',
+    employee_id: 'EMP-2021-119',
+    phone_number: '+63 955 501 7733',
+    address: 'Manila City, PH',
+    profile_picture: '',
+    is_active: true,
+    is_staff: true,
+    date_joined: '2021-08-03T08:00:00Z',
+    updated_at: '2025-02-12T10:30:00Z',
+  },
+];
