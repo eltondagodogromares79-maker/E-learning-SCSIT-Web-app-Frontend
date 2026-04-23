@@ -85,6 +85,19 @@ const getDirectTargetId = (room: Room, currentUserId?: string | null) => {
   return a === currentUserId ? b : a;
 };
 
+const sameRoomList = (left: Room[], right: Room[]) => {
+  if (left.length !== right.length) return false;
+  return left.every((room, index) => {
+    const other = right[index];
+    return (
+      room.id === other.id &&
+      room.label === other.label &&
+      room.kind === other.kind &&
+      room.targetId === other.targetId
+    );
+  });
+};
+
 export function ChatPanel() {
   const { data: chatContext } = useChatContext();
   const { data: contacts = [] } = useChatContacts();
@@ -279,11 +292,17 @@ export function ChatPanel() {
 
   useEffect(() => {
     if (!chatContext) return;
-    setHiddenRooms(new Set(chatContext.hidden_rooms ?? []));
+    const nextHidden = new Set(chatContext.hidden_rooms ?? []);
+    setHiddenRooms((prev) => {
+      if (prev.size === nextHidden.size && Array.from(prev).every((roomId) => nextHidden.has(roomId))) {
+        return prev;
+      }
+      return nextHidden;
+    });
   }, [chatContext?.id, chatContext?.hidden_rooms]);
 
   useEffect(() => {
-    if (!chatContext) return;
+    if (!chatContext?.id) return;
     const directRooms: Room[] = contacts.map((contact) => ({
       id: buildDirectRoomId(chatContext.id, contact.id),
       label: contact.full_name,
@@ -299,9 +318,9 @@ export function ChatPanel() {
           merged.push(room);
         }
       });
-      return merged;
+      return sameRoomList(prev, merged) ? prev : merged;
     });
-  }, [chatContext, contacts, activeRoom, hiddenRooms]);
+  }, [chatContext?.id, contacts, hiddenRooms]);
 
 
   useEffect(() => {

@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Mail, Eye, EyeOff, Loader2, BookOpen, Users, Award, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { usePublicStats } from '@/features/dashboard/hooks/usePublicStats';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,15 +23,23 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-const stats = [
-  { icon: Users, value: '1,200+', label: 'Learners' },
-  { icon: BookOpen, value: '24', label: 'Subjects' },
-  { icon: Award, value: '68', label: 'Teachers' },
+const fallbackStats = [
+  { icon: Users, value: '…', label: 'Learners' },
+  { icon: BookOpen, value: '…', label: 'Subjects' },
+  { icon: Award, value: '…', label: 'Teachers' },
 ];
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading, error, clearError, user, isInitializing } = useAuth();
+  const { data: publicStats } = usePublicStats();
+  const stats = publicStats
+    ? [
+        { icon: Users, value: String(publicStats.students), label: 'Learners' },
+        { icon: BookOpen, value: String(publicStats.subjects), label: 'Subjects' },
+        { icon: Award, value: String(publicStats.teachers), label: 'Teachers' },
+      ]
+    : fallbackStats;
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -83,7 +92,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="hidden lg:flex lg:w-[52%] flex-col justify-between relative overflow-hidden p-12"
         style={{
-          background: 'linear-gradient(145deg, #1a3a8f 0%, #2f6ff6 55%, #4f8fff 100%)',
+          background: 'var(--brand-blue)',
         }}
       >
         {/* Decorative circles */}

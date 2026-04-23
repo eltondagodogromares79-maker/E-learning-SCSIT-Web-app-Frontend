@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { PublicNav } from '@/components/navigation/PublicNav';
+import { PublicFooter } from '@/components/navigation/PublicFooter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Eye, Layers, Plug } from 'lucide-react';
@@ -32,16 +34,16 @@ const pillars = [
 ];
 
 const team = [
-  { initials: 'ED', name: 'Elton Dagodog', role: 'Developer', gradient: 'linear-gradient(135deg, #2f6ff6, #1a3a8f)' },
-  { initials: 'AS', name: 'Engr. Alden Salazar', role: 'School Owner', gradient: 'linear-gradient(135deg, #7aa7ff, #2f6ff6)' },
-  { initials: 'EA', name: 'Era Mae Abelgas', role: 'QA', gradient: 'linear-gradient(135deg, #4f8fff, #2f6ff6)' },
+  { initials: 'ED', name: 'Elton Dagodog', role: 'Developer', gradient: 'var(--brand-blue)' },
+  { initials: 'AS', name: 'Engr. Alden Salazar', role: 'School Owner', gradient: 'var(--brand-blue)' },
+  { initials: 'EA', name: 'Era Mae Abelgas', role: 'QA', gradient: 'var(--brand-blue)' },
 ];
 
 const facts = [
-  { label: 'Founded', value: '2024' },
-  { label: 'Focus', value: 'K-12 Education' },
+  { label: 'Founded', value: '1983' },
+  { label: 'Focus', value: 'Senior / Junior High School' },
   { label: 'Architecture', value: 'Feature-based' },
-  { label: 'Stack', value: 'Next.js + TypeScript' },
+  { label: 'Stack', value: 'Next.js + TypeScript + Django' },
 ];
 
 export default function AboutPage() {
@@ -53,26 +55,43 @@ export default function AboutPage() {
       <section className="relative overflow-hidden">
         <div
           className="pointer-events-none absolute -top-32 left-0 h-[400px] w-[500px] rounded-full opacity-20 blur-3xl"
-          style={{ background: 'radial-gradient(ellipse, rgba(47,111,246,0.35) 0%, transparent 70%)' }}
+          style={{ background: 'rgba(13,18,130,0.2)' }}
         />
         <div className="absolute -left-16 top-10 h-48 w-48 rounded-full opacity-40" style={{ border: '1px solid var(--border)' }} />
         <div className="absolute -right-12 top-24 h-32 w-32 rounded-full opacity-40" style={{ border: '1px solid var(--border)' }} />
 
         <div className="mx-auto w-full max-w-6xl px-6 py-24">
-          <div className="max-w-2xl space-y-6">
-            <span
-              className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
-              style={{ background: 'var(--brand-gold-muted)', color: 'var(--brand-blue-deep)' }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--brand-blue)' }} />
-              Our story
-            </span>
-            <h1 className="text-5xl font-semibold leading-[1.12] sm:text-6xl" style={{ color: 'var(--foreground)' }}>
-              About <span style={{ color: 'var(--brand-blue)' }}>SCSIT NEXUS</span>
-            </h1>
-            <p className="text-lg leading-relaxed" style={{ color: 'rgba(11,26,53,0.6)' }}>
-              SCSIT NEXUS is a UI-first learning management experience that balances simplicity with powerful academic workflows — built for the real world of K-12 schools.
-            </p>
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div className="max-w-2xl space-y-6">
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
+                style={{ background: 'var(--brand-gold-muted)', color: 'var(--brand-blue-deep)' }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--brand-blue)' }} />
+                Our story
+              </span>
+              <h1 className="text-5xl font-semibold leading-[1.12] sm:text-6xl" style={{ color: 'var(--foreground)' }}>
+                About <span style={{ color: 'var(--brand-blue)' }}>SCSIT NEXUS</span>
+              </h1>
+              <p className="text-lg leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
+                SCSIT NEXUS is a UI-first learning management experience that balances simplicity with powerful academic workflows — built for the real world of K-12 schools.
+                SCSIT NEXUS stands for Salazar Colleges of Science and Institute of Technology.
+              </p>
+            </div>
+            <div className="relative hidden lg:block">
+              <div className="absolute -inset-4 rounded-3xl opacity-20 blur-2xl" style={{ background: 'var(--brand-blue)' }} />
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl" style={{ border: '1px solid var(--border)' }}>
+                <Image
+                  src="https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800&q=80"
+                  alt="School building"
+                  width={800}
+                  height={500}
+                  className="h-72 w-full object-cover"
+                  unoptimized
+                />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,18,130,0.4) 0%, transparent 60%)' }} />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -85,10 +104,10 @@ export default function AboutPage() {
             <h2 className="text-3xl font-semibold" style={{ color: 'var(--foreground)' }}>
               Built with purpose, designed with care
             </h2>
-            <p className="text-sm leading-relaxed" style={{ color: 'rgba(11,26,53,0.6)' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
               We believe that great software for education should feel effortless. SCSIT NEXUS was created to remove friction from academic operations — so teachers can teach, students can learn, and administrators can lead.
             </p>
-            <p className="text-sm leading-relaxed" style={{ color: 'rgba(11,26,53,0.6)' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
               Every design decision is grounded in real school workflows, not abstract product thinking.
             </p>
             <Button as={Link} href="/dashboard" size="lg">Explore the platform</Button>
@@ -96,22 +115,32 @@ export default function AboutPage() {
 
           {/* Facts card */}
           <div
-            className="relative overflow-hidden rounded-3xl p-8"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 8px 40px rgba(47,111,246,0.06)' }}
+            className="relative overflow-hidden rounded-3xl"
+            style={{ border: '1px solid var(--border)', boxShadow: '0 8px 40px rgba(47,111,246,0.06)' }}
           >
-            <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full opacity-40" style={{ border: '1px solid var(--border)' }} />
-            <div className="relative space-y-0 divide-y divide-[var(--border)]">
-              {facts.map((item) => (
-                <div key={item.label} className="flex items-center justify-between py-4">
-                  <span className="text-sm" style={{ color: 'rgba(11,26,53,0.55)' }}>{item.label}</span>
-                  <span
-                    className="rounded-full px-3 py-1 text-xs font-semibold"
-                    style={{ background: 'var(--brand-blue-muted)', color: 'var(--brand-blue-deep)' }}
-                  >
-                    {item.value}
-                  </span>
-                </div>
-              ))}
+            <Image
+              src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&q=80"
+              alt="Classroom"
+              width={800}
+              height={300}
+              className="h-40 w-full object-cover"
+              unoptimized
+            />
+            <div className="p-8" style={{ background: 'var(--surface)' }}>
+              <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full opacity-40" style={{ border: '1px solid var(--border)' }} />
+              <div className="relative space-y-0 divide-y divide-[var(--border)]">
+                {facts.map((item) => (
+                  <div key={item.label} className="flex items-center justify-between py-4">
+                    <span className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{item.label}</span>
+                    <span
+                      className="rounded-full px-3 py-1 text-xs font-semibold"
+                      style={{ background: 'var(--brand-blue-muted)', color: 'var(--brand-blue-deep)' }}
+                    >
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -122,7 +151,7 @@ export default function AboutPage() {
         <div className="mb-12 text-center">
           <div className="mb-3 inline-block h-0.5 w-10 rounded-full" style={{ background: 'var(--brand-gold)' }} />
           <h2 className="text-3xl font-semibold" style={{ color: 'var(--foreground)' }}>Our core principles</h2>
-          <p className="mt-3 text-sm" style={{ color: 'rgba(11,26,53,0.5)' }}>The values that guide every product decision.</p>
+          <p className="mt-3 text-sm" style={{ color: 'var(--muted-foreground)' }}>The values that guide every product decision.</p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
           {pillars.map(({ icon: Icon, step, title, detail, accent, muted }) => (
@@ -136,10 +165,10 @@ export default function AboutPage() {
                   >
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className="text-2xl font-semibold" style={{ color: 'rgba(11,26,53,0.07)' }}>{step}</span>
+                <span className="text-2xl font-semibold" style={{ color: 'rgba(13,18,130,0.12)' }}>{step}</span>
                 </div>
                 <h3 className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>{title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(11,26,53,0.55)' }}>{detail}</p>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>{detail}</p>
               </CardContent>
             </Card>
           ))}
@@ -166,7 +195,7 @@ export default function AboutPage() {
                   {member.initials}
                 </div>
                 <div>
-                  <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{member.name}</div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{member.name}</div>
                   <div
                     className="mt-1 inline-block rounded-full px-3 py-0.5 text-xs font-medium"
                     style={{ background: 'var(--brand-blue-muted)', color: 'var(--brand-blue-deep)' }}
@@ -180,19 +209,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <footer style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 py-8 text-xs md:flex-row md:items-center md:justify-between" style={{ color: 'rgba(11,26,53,0.45)' }}>
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--brand-blue)' }} />
-            SCSIT NEXUS — E-Learning Platform
-          </div>
-          <div className="flex gap-5">
-            {([['Home', '/home'], ['About', '/about'], ['Directory', '/contact'], ['Sign in', '/login']] as const).map(([label, href]) => (
-              <Link key={label} href={href} className="transition-colors hover:text-[var(--brand-blue)]">{label}</Link>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

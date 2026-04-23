@@ -23,13 +23,12 @@ function getDeviceId() {
   const key = 'scsit_device_id';
   const existing = window.localStorage.getItem(key);
   if (existing) return existing;
-  const generated = crypto.randomUUID();
+  const generated =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `quiz-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   window.localStorage.setItem(key, generated);
   return generated;
-}
-
-function randomInterval(minMs: number, maxMs: number) {
-  return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 }
 
 function formatCountdown(totalSeconds: number | null, fallbackMinutes?: number) {
@@ -72,11 +71,13 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
         count: number;
         lastDetail?: string | null;
         lastAt?: string | null;
+        snapshots?: QuizProctorLog['snapshots'];
         timeline?: Array<{ id: string; detail?: string | null; created_at: string; snapshots: QuizProctorLog['snapshots'] }>;
       }
     >
   >({});
-  const [isLoadingViolations, setIsLoadingViolations] = useState(false);
+  const [snapshotOpen, setSnapshotOpen] = useState(false);
+  const [activeSnapshots, setActiveSnapshots] = useState<QuizProctorLog['snapshots']>([]);
   const violationsRef = useRef<
     Record<
       string,
@@ -84,6 +85,7 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
         count: number;
         lastDetail?: string | null;
         lastAt?: string | null;
+        snapshots?: QuizProctorLog['snapshots'];
         timeline?: Array<{ id: string; detail?: string | null; created_at: string; snapshots: QuizProctorLog['snapshots'] }>;
       }
     >
@@ -93,10 +95,11 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
   const pendingSubmitReasonRef = useRef<'violation' | 'time' | 'manual' | null>(null);
   const sessionIdRef = useRef('');
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const previewRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const snapshotCountRef = useRef(0);
+  const snapshotTimeoutsRef = useRef<number[]>([]);
   const heartbeatRef = useRef<number | null>(null);
-  const faceIntervalRef = useRef<number | null>(null);
-  const snapshotTimerRef = useRef<number | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
   const warningLock = useRef(false);
   const listenerCleanupRef = useRef<(() => void) | null>(null);
@@ -122,7 +125,6 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
       });
   }, [allAttempts, quizId]);
   const latestAttempt = attemptsForQuiz[0];
-  const totalPoints = quiz?.total_points ?? 0;
   const hasOpenEnded = useMemo(
     () => Boolean(quiz?.questions?.some((question) => question.question_type === 'essay' || question.question_type === 'identification')),
     [quiz?.questions]
@@ -131,28 +133,29 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
 
   const precheck = useMemo(() => {
     if (typeof window === 'undefined') {
-      return {
-        cameraSupported: false,
-        fullscreenSupported: false,
-        faceDetectorSupported: false,
-        secureContext: false,
-      };
+      return { cameraSupported: false, fullscreenSupported: false, secureContext: false };
     }
+    // localhost is always treated as secure context for camera access
+    const isLocalhost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '::1';
+    const secureContext = window.isSecureContext || isLocalhost;
+    const cameraSupported = Boolean(navigator.mediaDevices?.getUserMedia) && secureContext;
     return {
-      cameraSupported: Boolean(navigator.mediaDevices?.getUserMedia),
+      cameraSupported,
       fullscreenSupported: Boolean(document.fullscreenEnabled),
-      faceDetectorSupported: 'FaceDetector' in window,
-      secureContext: window.isSecureContext,
+      secureContext,
     };
   }, []);
 
   const cleanupTimers = () => {
     if (heartbeatRef.current) window.clearInterval(heartbeatRef.current);
-    if (faceIntervalRef.current) window.clearInterval(faceIntervalRef.current);
-    if (snapshotTimerRef.current) window.clearTimeout(snapshotTimerRef.current);
     heartbeatRef.current = null;
-    faceIntervalRef.current = null;
-    snapshotTimerRef.current = null;
+    if (snapshotTimeoutsRef.current.length) {
+      snapshotTimeoutsRef.current.forEach((timerId) => window.clearTimeout(timerId));
+      snapshotTimeoutsRef.current = [];
+    }
     if (listenerCleanupRef.current) {
       listenerCleanupRef.current();
       listenerCleanupRef.current = null;
@@ -165,6 +168,7 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
       window.clearTimeout(noticeTimerRef.current);
       noticeTimerRef.current = null;
     }
+    snapshotCountRef.current = 0;
   };
 
   const stopCamera = () => {
@@ -173,17 +177,77 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
     setCameraReady(false);
   };
 
-  const captureSnapshot = async (_reason: string) => {
-    return;
+  const attachStream = (stream: MediaStream) => {
+    [videoRef, previewRef].forEach((ref) => {
+      if (ref.current && ref.current.srcObject !== stream) {
+        ref.current.srcObject = stream;
+        ref.current.play().catch(() => {});
+      }
+    });
   };
 
-  const scheduleRandomSnapshot = () => {
-    if (!sessionId) return;
-    const delay = randomInterval(5 * 60 * 1000, 10 * 60 * 1000);
-    snapshotTimerRef.current = window.setTimeout(async () => {
-      await captureSnapshot('periodic');
-      scheduleRandomSnapshot();
-    }, delay);
+  const ensureCamera = async () => {
+    if (streamRef.current) {
+      attachStream(streamRef.current);
+      return streamRef.current;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error('Camera is not supported in this browser.');
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' },
+      audio: false,
+    });
+    streamRef.current = stream;
+    attachStream(stream);
+    setCameraReady(true);
+    return stream;
+  };
+
+  const captureSnapshot = async (reason: string) => {
+    if (!sessionIdRef.current) return;
+    if (snapshotCountRef.current >= 5) return;
+    try {
+      await ensureCamera();
+      const video = videoRef.current;
+      if (!video) return;
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 480;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, width, height);
+      const imageData = canvas.toDataURL('image/jpeg', 0.7);
+      await quizService.sendSnapshot({ session_id: sessionIdRef.current, reason, image_data: imageData });
+      snapshotCountRef.current += 1;
+    } catch {
+      // ignore snapshot failures
+    }
+  };
+
+  const scheduleEvenSnapshots = (totalMs: number) => {
+    if (!sessionIdRef.current) return;
+    snapshotTimeoutsRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    snapshotTimeoutsRef.current = [];
+    snapshotCountRef.current = 0;
+    const totalSnapshots = 5;
+    const firstDelay = 5000;
+    const remaining = Math.max(0, totalMs - firstDelay);
+    const remainingCount = totalSnapshots - 1;
+    const step = remainingCount > 0 ? Math.floor(remaining / (remainingCount + 1)) : 0;
+    const firstTimer = window.setTimeout(() => {
+      captureSnapshot('start-5s');
+    }, firstDelay);
+    snapshotTimeoutsRef.current.push(firstTimer);
+    for (let i = 1; i <= remainingCount; i += 1) {
+      const delay = firstDelay + i * step;
+      const timerId = window.setTimeout(() => {
+        captureSnapshot(`even-${i + 1}`);
+      }, delay);
+      snapshotTimeoutsRef.current.push(timerId);
+    }
   };
 
   const getAnswerSnapshot = () => {
@@ -219,7 +283,7 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
         ai_grade: shouldAiGrade,
       });
       setWarnings((prev) => prev + 1);
-      setWarningMessage(`Violation detected: ${reason}. Auto-submitting your quiz.`);
+      setWarningMessage(`Rule violation: ${detail ?? reason}. Your quiz will be submitted automatically.`);
       setNoticeOpen(true);
       setProctorState('terminated');
       setSubmitReason('violation');
@@ -254,8 +318,6 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
         // ignore
       }
     }, 30000);
-
-    // camera/snapshot checks disabled per requirement
 
     const handleVisibility = () => {
       if (document.hidden) issueWarning('Tab switched');
@@ -377,17 +439,30 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
     }
     setProctorState('starting');
     try {
-      if (isStrict && !document.fullscreenEnabled) {
-        throw new Error('Fullscreen is not supported in this browser.');
-      }
-      if (isStrict) {
-        await document.documentElement.requestFullscreen();
+      if (isStrict && document.fullscreenEnabled) {
+        try {
+          await document.documentElement.requestFullscreen();
+        } catch {
+          issueWarning('Fullscreen request failed');
+        }
+      } else if (isStrict) {
+        issueWarning('Fullscreen not supported in this browser');
       }
       setCameraReady(false);
+      try {
+        await ensureCamera();
+      } catch (err: any) {
+        setWarningMessage(err?.message || 'Camera access is required for this quiz.');
+        setNoticeOpen(true);
+        setProctorState('idle');
+        stopCamera();
+        return;
+      }
       const deviceId = getDeviceId();
       const session = await quizService.startProctor(quiz.id, { device_id: deviceId });
       setSessionId(session.session_id);
       sessionIdRef.current = session.session_id;
+      snapshotCountRef.current = 0;
       setWarnings(session.warnings);
       setTerminations(session.terminations);
       setPenalty(session.penalty_percent);
@@ -402,7 +477,7 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
       }
       setProctorState('active');
       await quizService.logEvent({ session_id: session.session_id, event_type: 'start', detail: 'Proctoring started' });
-      await captureSnapshot('start');
+      scheduleEvenSnapshots((quiz?.time_limit_minutes ?? 30) * 60 * 1000);
       startMonitoring();
     } catch (error: any) {
       const apiError = error?.response?.data?.error ?? error?.message;
@@ -766,6 +841,20 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
   }, []);
 
   useEffect(() => {
+    if (!precheckOpen) return;
+    ensureCamera().catch((err: any) => {
+      setWarningMessage(err?.message ?? 'Camera access denied. Please allow camera in your browser settings and try again.');
+      setNoticeOpen(true);
+    });
+  }, [precheckOpen]);
+
+  // Re-attach stream to quiz room video when quiz becomes active
+  useEffect(() => {
+    if (proctorState !== 'active' || !streamRef.current) return;
+    attachStream(streamRef.current);
+  }, [proctorState]);
+
+  useEffect(() => {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
 
@@ -775,7 +864,6 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
       if (attemptsForQuiz.length === 0) return;
       const missing = attemptsForQuiz.filter((attempt) => violationsRef.current[attempt.id] === undefined);
       if (missing.length === 0) return;
-      setIsLoadingViolations(true);
       try {
         const results = await Promise.all(
           missing.map(async (attempt) => {
@@ -792,6 +880,7 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
                       snapshots: log.snapshots ?? [],
                     }))
                 ) ?? [];
+              const snapshots = logs?.flatMap((log) => log.snapshots ?? []) ?? [];
               const count = eventsWithContext.length;
               const lastEvent = eventsWithContext.sort(
                 (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -801,10 +890,11 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
                 count,
                 lastDetail: lastEvent?.detail ?? null,
                 lastAt: lastEvent?.created_at ?? null,
+                snapshots,
                 timeline: eventsWithContext,
               };
             } catch {
-              return { id: attempt.id, count: 0, lastDetail: null, lastAt: null, timeline: [] };
+              return { id: attempt.id, count: 0, lastDetail: null, lastAt: null, snapshots: [], timeline: [] };
             }
           })
         );
@@ -823,10 +913,6 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
         });
       } catch {
         // ignore
-      } finally {
-        if (active) {
-          setIsLoadingViolations(false);
-        }
       }
     };
     loadViolations();
@@ -851,13 +937,6 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
                 <Badge variant="outline">Time left: {formatCountdown(timeLeft, quiz.time_limit_minutes)}</Badge>
               ) : null}
               <Badge variant="outline">Security: {securityLevel}</Badge>
-              {latestAttempt && typeof violationsByAttempt[latestAttempt.id]?.count === 'number' ? (
-                <Badge className="border border-rose-200 bg-rose-50 text-rose-700">
-                  Violations {violationsByAttempt[latestAttempt.id]?.count ?? 0}
-                </Badge>
-              ) : isLoadingViolations ? (
-                <Badge variant="outline">Violations…</Badge>
-              ) : null}
             </div>
           }
         />
@@ -882,11 +961,20 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
                   <div className="text-xs text-neutral-500">No feedback yet.</div>
                 )}
               </div>
-              <div className="text-right">
-                <div className="text-xs font-semibold text-neutral-600">Score</div>
-                <div className="text-2xl font-semibold text-neutral-900">
-                  {latestAttempt.score ?? 0} / {totalPoints}
-                </div>
+              <div className="flex flex-col items-end gap-2 text-right text-xs text-neutral-500">
+                <div>Submission saved.</div>
+                {((violationsByAttempt[latestAttempt.id]?.snapshots ?? []).length > 0) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setActiveSnapshots(violationsByAttempt[latestAttempt.id]?.snapshots ?? []);
+                      setSnapshotOpen(true);
+                    }}
+                  >
+                    View snapshots
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -917,45 +1005,24 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
                       ) : (
                         <div className="mt-2 text-xs text-neutral-500">No feedback yet.</div>
                       )}
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-neutral-500">
-                        <span
-                          className={`rounded-full border px-2 py-0.5 ${
-                            (violationsByAttempt[attempt.id]?.count ?? 0) > 0
-                              ? 'border-rose-200 bg-rose-50 text-rose-700'
-                              : 'border-neutral-200 bg-neutral-50'
-                          }`}
-                        >
-                          Violations:{' '}
-                          {isLoadingViolations && violationsByAttempt[attempt.id] === undefined
-                            ? '…'
-                            : violationsByAttempt[attempt.id]?.count ?? 0}
-                        </span>
-                        <Button as={Link} size="sm" variant="outline" href="/dashboard/student/quizzes/attempts">
-                          Jump to review
-                        </Button>
+                      <div className="mt-2 text-[11px] text-neutral-500">
+                        Submission saved.
                       </div>
-                      {violationsByAttempt[attempt.id]?.timeline?.length ? (
-                        <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50/80 p-2 text-[11px] text-rose-700">
-                          <div className="text-[10px] uppercase tracking-[0.2em] text-rose-500">Violation timeline</div>
-                          <div className="mt-2 space-y-2">
-                            {violationsByAttempt[attempt.id]?.timeline?.map((event, index) => (
-                              <div key={`${event.id}-${index}`} className="rounded-md border border-rose-200/70 bg-rose-50 p-2">
-                                <div className="font-semibold text-rose-700">Violation</div>
-                                <div className="mt-1">{event.detail ?? 'Violation recorded.'}</div>
-                                <div className="mt-1 text-[10px] text-rose-400">
-                                  {new Date(event.created_at).toLocaleString()}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
                     </div>
-                    <div className="text-right">
-                      <div className="text-xs font-semibold text-neutral-600">Score</div>
-                      <div className="text-2xl font-semibold text-neutral-900">
-                        {attempt.score ?? 0} / {totalPoints}
-                      </div>
+                    <div className="flex flex-col items-end gap-2 text-right text-xs text-neutral-500">
+                      <div>Submission saved.</div>
+                      {((violationsByAttempt[attempt.id]?.snapshots ?? []).length > 0) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveSnapshots(violationsByAttempt[attempt.id]?.snapshots ?? []);
+                            setSnapshotOpen(true);
+                          }}
+                        >
+                          View snapshots
+                        </Button>
+                      )}
                     </div>
                   </div>
                   {attempt.answers && attempt.answers.length > 0 ? (
@@ -969,9 +1036,6 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
                           <div className="mt-1 text-sm font-semibold text-neutral-900">{answer.question_text ?? 'Answer'}</div>
                           <div className="mt-1 text-neutral-700">
                             {answer.selected_choice_text ?? answer.text_answer ?? 'No answer text'}
-                          </div>
-                          <div className="mt-2 text-[11px] text-neutral-500">
-                            Points: {answer.points_earned ?? 0} / {answer.question_points ?? 0}
                           </div>
                           {answer.feedback ? (
                             <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-[11px] text-emerald-900">
@@ -996,6 +1060,26 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
               <CardTitle>Quiz room</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-neutral-600">
+              <div className="flex justify-center">
+                <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-950 shadow-inner w-64">
+                  <div className="relative aspect-video">
+                    <video ref={videoRef} className="h-full w-full object-cover" playsInline muted autoPlay />
+                    {!cameraReady && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <span className="text-xs text-white/60">Camera off</span>
+                      </div>
+                    )}
+                    {cameraReady && (
+                      <div className="absolute top-2 right-2">
+                        <span className="flex items-center gap-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] text-white">
+                          <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                          Live
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
               {proctorState === 'active' && quiz?.questions?.length ? (
                 quiz.questions.map((question, index) => (
                   <div
@@ -1078,19 +1162,23 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
                 <CardTitle>Proctoring status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-neutral-600">
-              {quiz?.time_limit_minutes ? (
-                <div className="flex items-center justify-between">
-                  <span>Time left</span>
-                  <span className="font-semibold text-neutral-900">
-                    {timeLeft === null
-                      ? `${quiz.time_limit_minutes}:00`
-                      : `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`}
-                  </span>
-                </div>
-              ) : null}
+                {quiz?.time_limit_minutes ? (
+                  <div className="flex items-center justify-between">
+                    <span>Time left</span>
+                    <span className="font-semibold text-neutral-900">
+                      {timeLeft === null
+                        ? `${quiz.time_limit_minutes}:00`
+                        : `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between">
                   <span>Status</span>
                   <Badge variant="outline">{proctorState}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Camera</span>
+                  <Badge variant="outline">{cameraReady ? 'Ready' : 'Waiting'}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Warnings</span>
@@ -1142,33 +1230,87 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
           </DialogContent>
         </Dialog>
 
-        <Dialog open={precheckOpen} onOpenChange={setPrecheckOpen}>
+        <Dialog open={precheckOpen} onOpenChange={(open) => { if (!open) { stopCamera(); } setPrecheckOpen(open); }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Pre-check before starting</DialogTitle>
+              <DialogTitle>Camera check</DialogTitle>
               <DialogDescription>
-                {isStrict
-                  ? 'Security is strict. Any rule violation will auto-submit your quiz.'
-                  : 'Security is normal. Any rule violation will auto-submit your quiz.'}
+                Make sure your camera is working before starting. You must be visible in the preview below.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 text-sm text-neutral-600">
-              <div className="flex items-center justify-between">
-                <span>Secure context (HTTPS)</span>
-                <Badge variant="outline">{precheck.secureContext ? 'OK' : 'Required'}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Fullscreen</span>
-                <Badge variant="outline">{precheck.fullscreenSupported ? 'OK' : 'Not supported'}</Badge>
-              </div>
-              {isStrict && (!precheck.secureContext || !precheck.fullscreenSupported) ? (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                  Your browser does not meet all requirements. The quiz cannot start until these are supported.
+              {/* live camera preview inside the dialog */}
+              <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-950">
+                <div className="relative aspect-video">
+                  <video ref={previewRef} className="h-full w-full object-cover" playsInline muted autoPlay />
+                  {!cameraReady && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-center text-xs text-white/80 px-4">
+                      <span className="text-2xl">📷</span>
+                      <span>Starting camera…</span>
+                    </div>
+                  )}
                 </div>
-              ) : null}
+              </div>
+
+              {/* camera start button if not yet ready */}
+              {!cameraReady && (
+                <Button
+                  className="w-full"
+                  variant="secondary"
+                  onClick={async () => {
+                    try {
+                      await ensureCamera();
+                    } catch (err: any) {
+                      setWarningMessage(err?.message ?? 'Camera access denied. Please allow camera in your browser settings.');
+                      setNoticeOpen(true);
+                    }
+                  }}
+                >
+                  Allow Camera
+                </Button>
+              )}
+
+              {cameraReady && (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  <span>✅</span>
+                  <span>Camera is working. You can start the quiz.</span>
+                </div>
+              )}
+
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-700">
+                {isStrict
+                  ? 'Strict mode: fullscreen, tab lock, and anti-switch rules are enforced. Any violation auto-submits your quiz.'
+                  : '5 snapshots will be taken automatically during the quiz. Stay visible in the camera.'}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                {[
+                  { label: 'HTTPS', ok: precheck.secureContext },
+                  { label: 'Camera API', ok: precheck.cameraSupported },
+                  { label: 'Fullscreen', ok: precheck.fullscreenSupported },
+                ].map((item) => (
+                  <div key={item.label} className={`rounded-lg border px-2 py-1.5 text-center ${
+                    item.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'
+                  }`}>
+                    <div className="font-semibold">{item.ok ? '✓' : '✗'}</div>
+                    <div>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {!precheck.cameraSupported && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                  ⚠️ Camera is not supported in this browser or device. You cannot take this quiz without a camera.
+                </div>
+              )}
+              {!precheck.secureContext && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                  ⚠️ This page must be served over HTTPS for camera access to work.
+                </div>
+              )}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => setPrecheckOpen(false)}>
+              <Button variant="secondary" onClick={() => { stopCamera(); setPrecheckOpen(false); }}>
                 Cancel
               </Button>
               <Button
@@ -1176,11 +1318,37 @@ export default function StudentQuizTakePage({ params }: { params: Promise<{ quiz
                   setPrecheckOpen(false);
                   startExam();
                 }}
-                disabled={isStrict && (!precheck.secureContext || !precheck.fullscreenSupported)}
+                disabled={!cameraReady || !precheck.cameraSupported}
               >
                 Start quiz
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={snapshotOpen} onOpenChange={setSnapshotOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Your snapshots</DialogTitle>
+              <DialogDescription>These images were captured during your quiz session.</DialogDescription>
+            </DialogHeader>
+            {activeSnapshots.length === 0 ? (
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500">
+                No snapshots available yet.
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {activeSnapshots.map((shot) => (
+                  <div key={shot.id} className="overflow-hidden rounded-2xl border border-neutral-200">
+                    <img src={shot.image_url} alt={shot.reason ?? 'Snapshot'} className="h-48 w-full object-cover" />
+                    <div className="p-3 text-xs text-neutral-500">
+                      <div className="font-semibold text-neutral-700">{shot.reason ?? 'Snapshot'}</div>
+                      <div>{new Date(shot.created_at).toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 

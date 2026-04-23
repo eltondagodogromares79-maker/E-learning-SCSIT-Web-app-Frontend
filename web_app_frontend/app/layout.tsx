@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/app/providers";
+import { CryptoUUIDPolyfill } from "@/components/compat/CryptoUUID";
 
 export const metadata: Metadata = {
   title: "SCSIT Nexus | E-Learning Platform",
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body
         className="antialiased"
       >
+        <CryptoUUIDPolyfill />
         <Providers>{children}</Providers>
       </body>
     </html>

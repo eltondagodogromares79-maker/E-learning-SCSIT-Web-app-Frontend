@@ -88,16 +88,16 @@ function StudentSearchPageInner() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Lessons</CardTitle>
+          <CardTitle>Learning materials</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {filteredLessons.length === 0 ? (
-                <div className="text-sm text-neutral-500">No matching lessons.</div>
+                <div className="text-sm text-neutral-500">No matching learning materials.</div>
               ) : (
                 filteredLessons.map((lesson) => (
                   <Link key={lesson.id} href={`/dashboard/student/lessons/${lesson.id}`} className="block rounded-xl border border-neutral-200 p-4">
                     <div className="text-sm font-semibold text-neutral-900">{lesson.title}</div>
-                    <div className="text-xs text-neutral-500">{lesson.subject_code ?? 'Lesson'}</div>
+                    <div className="text-xs text-neutral-500">{lesson.subject_code ?? 'Material'}</div>
                   </Link>
                 ))
               )}

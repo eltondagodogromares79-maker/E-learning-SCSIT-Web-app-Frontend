@@ -15,7 +15,7 @@ export function useUpdateLesson() {
     } }) => lessonService.update(payload.id, payload.data),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lessons'] });
-      showToast({ title: 'Lesson updated', description: 'Changes saved.', variant: 'success' });
+      showToast({ title: 'Learning material updated', description: 'Changes saved.', variant: 'success' });
     },
     onError: () => {
       showToast({ title: 'Update failed', description: 'Unable to update lesson.', variant: 'error' });

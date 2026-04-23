@@ -20,6 +20,7 @@ export interface TranscriptEnrollment {
   status: string;
   is_current: boolean;
   year_level_name?: string;
+  section_name?: string;
   program_name?: string;
   enrolled_at: string;
   student_subjects: TranscriptSubject[];

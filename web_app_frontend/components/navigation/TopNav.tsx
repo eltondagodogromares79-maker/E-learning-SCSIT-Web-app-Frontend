@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Menu, MessageCircle, Search, ChevronDown, Settings, User, LogOut, Trash2 } from 'lucide-react';
+import { Bell, Menu, MessageCircle, ChevronDown, User, LogOut, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useChatBadge } from '@/features/chat/hooks/useChatBadge';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import type { Notification, UserRole } from '@/types';
@@ -75,9 +74,7 @@ export function TopNav({
 }: TopNavProps) {
   const [open, setOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   const notifRef = useRef<HTMLDivElement | null>(null);
-  const router = useRouter();
   const { unreadCount } = useChatBadge();
   const unreadLabel = unreadCount > 99 ? '99+' : String(unreadCount);
   const {
@@ -136,10 +133,10 @@ export function TopNav({
     <header
       className="sticky top-0 z-20"
       style={{
-        background: 'rgba(255,255,255,0.92)',
+        background: 'var(--nav-glass)',
         backdropFilter: 'blur(14px)',
         borderBottom: '1px solid var(--border)',
-        boxShadow: '0 10px 30px -22px rgba(15,23,42,0.55)',
+        boxShadow: 'var(--nav-shadow)',
       }}
     >
       <div className="flex items-center justify-between px-6 py-4 sm:px-8">
@@ -160,34 +157,10 @@ export function TopNav({
                 </span>
               ) : null}
             </div>
-            {subtitle ? <div className="text-xs" style={{ color: 'rgba(15,23,42,0.5)' }}>{subtitle}</div> : null}
+            {subtitle ? <div className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{subtitle}</div> : null}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <form
-            className="hidden items-center gap-2 rounded-full px-4 py-2 text-xs md:flex"
-            style={{ background: 'rgba(241,244,251,0.9)', border: '1px solid var(--border)', color: 'rgba(15,23,42,0.5)' }}
-            onSubmit={(event) => {
-              event.preventDefault();
-              const query = searchValue.trim();
-              if (!query) return;
-              if (userRole === 'student') {
-                router.push(`/dashboard/student/search?q=${encodeURIComponent(query)}`);
-                return;
-              }
-              if (userRole === 'teacher' || userRole === 'instructor' || userRole === 'adviser') {
-                router.push(`/dashboard/teacher/search?q=${encodeURIComponent(query)}`);
-              }
-            }}
-          >
-            <Search className="h-3 w-3" />
-            <input
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              placeholder="Search courses, students, staff"
-              className="w-56 bg-transparent text-xs text-neutral-600 placeholder:text-neutral-400 outline-none"
-            />
-          </form>
           <div className="flex items-center gap-2">
             <div className="relative" ref={notifRef}>
               <button
@@ -198,7 +171,7 @@ export function TopNav({
               >
                 <Bell className="h-4 w-4" />
                 {notificationCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white" style={{ background: '#dc2626' }}>
                     {notificationLabel}
                   </span>
                 ) : null}
@@ -238,18 +211,19 @@ export function TopNav({
                                 {item.title}
                               </div>
                               {item.body ? (
-                                <div className="text-[11px]" style={{ color: 'rgba(15,23,42,0.6)' }}>
+                                <div className="text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
                                   {item.body}
                                 </div>
                               ) : null}
-                              <div className="text-[10px]" style={{ color: 'rgba(15,23,42,0.4)' }}>
+                              <div className="text-[10px]" style={{ color: 'var(--muted-foreground)' }}>
                                 {formatTimestamp(item.created_at)}
                               </div>
                             </div>
                             <button
                               type="button"
                               aria-label="Delete notification"
-                              className="ml-2 rounded-md p-1 text-neutral-400 transition hover:text-red-500"
+                              className="ml-2 rounded-md p-1 transition"
+                              style={{ color: '#dc2626' }}
                               onClick={async (event) => {
                                 event.preventDefault();
                                 event.stopPropagation();
@@ -278,7 +252,7 @@ export function TopNav({
               >
                 <MessageCircle className="h-4 w-4" />
                 {unreadCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white" style={{ background: '#dc2626' }}>
                     {unreadLabel}
                   </span>
                 ) : null}
@@ -291,7 +265,7 @@ export function TopNav({
               >
                 <MessageCircle className="h-4 w-4" />
                 {unreadCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white" style={{ background: '#dc2626' }}>
                     {unreadLabel}
                   </span>
                 ) : null}
@@ -334,23 +308,14 @@ export function TopNav({
                     <User className="h-4 w-4" />
                     Profile
                   </Link>
-                  <Link
-                    href="#"
-                    className="flex items-center gap-2 px-4 py-2 text-xs hover:bg-[var(--surface-2)]"
-                    style={{ color: 'var(--foreground)' }}
-                    role="menuitem"
-                    onClick={() => setOpen(false)}
-                  >
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Link>
+                  {/* Settings hidden for now */}
                   <button
                     onClick={() => {
                       setOpen(false);
                       onLogout?.();
                     }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-xs hover:bg-[var(--surface-2)]"
-                    style={{ color: 'var(--foreground)' }}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-xs transition-colors hover:bg-red-50"
+                    style={{ color: '#dc2626' }}
                     role="menuitem"
                   >
                     <LogOut className="h-4 w-4" />

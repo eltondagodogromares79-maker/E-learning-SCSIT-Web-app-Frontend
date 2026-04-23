@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useAssignments } from '@/features/assignments/hooks/useAssignments';
+import { ClipboardList } from 'lucide-react';
 import { useCreateAssignment } from '@/features/assignments/hooks/useCreateAssignment';
 import { useAiGenerateAssignment } from '@/features/assignments/hooks/useAiGenerateAssignment';
 import { useAiSaveAssignment } from '@/features/assignments/hooks/useAiSaveAssignment';
+import { useDeleteAssignment } from '@/features/assignments/hooks/useDeleteAssignment';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { useToast } from '@/components/ui/toast';
+import { useConfirm } from '@/components/ui/confirm';
 
 function TeacherAssignmentsPageInner() {
   const { data: assignments = [] } = useAssignments();
@@ -24,10 +26,12 @@ function TeacherAssignmentsPageInner() {
   const createAssignment = useCreateAssignment();
   const aiGenerateAssignment = useAiGenerateAssignment();
   const aiSaveAssignment = useAiSaveAssignment();
+  const deleteAssignment = useDeleteAssignment();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
+  const confirm = useConfirm();
 
-  const [createMode, setCreateMode] = useState<'ai' | 'manual'>('ai');
+  const [createMode, setCreateMode] = useState<'ai' | 'manual'>('manual');
   const [sectionSubjectId, setSectionSubjectId] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiDueDate, setAiDueDate] = useState('');
@@ -150,25 +154,24 @@ function TeacherAssignmentsPageInner() {
 
   return (
     <AppShell title="Teacher Dashboard" subtitle="Assignments" navItems={teacherNav} requiredRole="teacher">
-      <div className="space-y-6">
-        <PageHeader
-          title="Assignments"
-          description="Create new assignments manually or with AI, then review submissions."
-        />
+      <div className="space-y-8 p-6 lg:p-8">
+
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-3xl p-8 lg:p-10" style={{ background: 'var(--brand-blue)' }}>
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white opacity-10" />
+          <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white opacity-5" />
+          <div className="relative">
+            <div className="mb-2 flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-white/70" />
+              <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Assignments</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white lg:text-4xl">Assignments</h1>
+            <p className="mt-2 text-sm text-white/70">{assignments.length} assignment{assignments.length !== 1 ? 's' : ''} · AI or manual creation</p>
+          </div>
+        </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="rounded-full border border-[rgba(15,23,42,0.12)] bg-white/80 p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setCreateMode('ai')}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                createMode === 'ai'
-                  ? 'bg-[var(--brand-blue-deep)] text-white shadow'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              AI Draft
-            </button>
             <button
               type="button"
               onClick={() => setCreateMode('manual')}
@@ -179,6 +182,17 @@ function TeacherAssignmentsPageInner() {
               }`}
             >
               Manual
+            </button>
+            <button
+              type="button"
+              onClick={() => setCreateMode('ai')}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                createMode === 'ai'
+                  ? 'bg-[var(--brand-blue-deep)] text-white shadow'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              AI Draft
             </button>
           </div>
           <div className="text-xs uppercase tracking-[0.2em] text-neutral-400">
@@ -413,14 +427,32 @@ function TeacherAssignmentsPageInner() {
                   </div>
                   <Badge variant="outline">Due {new Date(assignment.due_date).toLocaleDateString()}</Badge>
                 </CardHeader>
-                <CardContent className="flex items-center justify-between text-xs text-neutral-500">
+                <CardContent className="space-y-4 text-xs text-neutral-500">
                   <div>Total points: {assignment.total_points}</div>
-                  <Link
-                    href={`/dashboard/teacher/assignments/${assignment.id}`}
-                    className="text-xs font-medium text-[var(--brand-blue-deep)] hover:underline"
-                  >
-                    View submissions
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button as={Link} href={`/dashboard/teacher/assignments/${assignment.id}`} size="sm" variant="outline">
+                      View submissions
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="border border-red-900 bg-red-700 text-white hover:bg-red-800"
+                      style={{ background: '#dc2626', borderColor: '#991b1b', color: '#fff' }}
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: 'Delete assignment?',
+                          description: 'This will remove the assignment and its submissions.',
+                          confirmText: 'Delete',
+                          cancelText: 'Cancel',
+                          danger: true,
+                        });
+                        if (!ok) return;
+                        await deleteAssignment.mutateAsync(assignment.id);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))

@@ -79,6 +79,8 @@ interface ApiSectionSubject {
   term: string;
   term_label?: string | null;
   teacher_name?: string | null;
+  schedule_days?: string | null;
+  schedule_time?: string | null;
 }
 
 function unwrapList<T>(data: ApiList<T>): T[] {
@@ -178,6 +180,8 @@ export const subjectService = {
       term_id: item.term,
       term_label: item.term_label ?? undefined,
       teacher_name: item.teacher_name ?? undefined,
+      schedule_days: item.schedule_days ?? undefined,
+      schedule_time: item.schedule_time ?? undefined,
     }));
   },
 };

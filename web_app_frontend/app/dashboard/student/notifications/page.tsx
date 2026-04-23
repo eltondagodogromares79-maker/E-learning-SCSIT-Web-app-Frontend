@@ -9,7 +9,7 @@ export default function StudentNotificationsPage() {
   return (
     <AppShell title="Student Dashboard" subtitle="Notifications" navItems={studentNav} requiredRole="student">
       <div className="space-y-6">
-        <PageHeader title="Notifications" description="Stay updated with lessons, quizzes, and assignments." />
+        <PageHeader title="Notifications" description="Stay updated with learning materials, quizzes, and assignments." />
         <NotificationsPage />
       </div>
     </AppShell>

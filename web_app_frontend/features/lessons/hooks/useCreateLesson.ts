@@ -16,7 +16,7 @@ export function useCreateLesson() {
     }) => lessonService.create(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lessons'] });
-      showToast({ title: 'Lesson created', description: 'Your lesson was saved.', variant: 'success' });
+      showToast({ title: 'Learning material created', description: 'Your material was saved.', variant: 'success' });
     },
     onError: () => {
       showToast({ title: 'Save failed', description: 'Unable to create lesson.', variant: 'error' });

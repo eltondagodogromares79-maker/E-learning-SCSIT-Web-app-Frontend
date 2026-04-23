@@ -10,7 +10,7 @@ export function useDeleteLesson() {
     mutationFn: (id: string) => lessonService.remove(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lessons'] });
-      showToast({ title: 'Lesson deleted', description: 'Lesson removed.', variant: 'success' });
+      showToast({ title: 'Learning material deleted', description: 'Material removed.', variant: 'success' });
     },
     onError: () => {
       showToast({ title: 'Delete failed', description: 'Unable to delete lesson.', variant: 'error' });

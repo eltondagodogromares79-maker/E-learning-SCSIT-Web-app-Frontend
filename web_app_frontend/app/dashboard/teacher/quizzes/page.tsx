@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useQuizzes } from '@/features/quizzes/hooks/useQuizzes';
+import { HelpCircle } from 'lucide-react';
 import { useCreateQuiz } from '@/features/quizzes/hooks/useCreateQuiz';
 import { useAiGenerateQuiz } from '@/features/quizzes/hooks/useAiGenerateQuiz';
 import { useAiSaveQuiz } from '@/features/quizzes/hooks/useAiSaveQuiz';
@@ -33,7 +33,7 @@ function TeacherQuizzesPageInner() {
   const searchParams = useSearchParams();
   const confirm = useConfirm();
 
-  const [createMode, setCreateMode] = useState<'ai' | 'manual'>('ai');
+  const [createMode, setCreateMode] = useState<'ai' | 'manual'>('manual');
   const [sectionSubjectId, setSectionSubjectId] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiDueDate, setAiDueDate] = useState('');
@@ -45,8 +45,8 @@ function TeacherQuizzesPageInner() {
   const [aiDraftTimeLimit, setAiDraftTimeLimit] = useState('');
   const [aiDraftAttemptLimit, setAiDraftAttemptLimit] = useState('1');
   const [aiDraftAiGrade, setAiDraftAiGrade] = useState(true);
-  const [aiSecurityLevel, setAiSecurityLevel] = useState<'normal' | 'strict'>('normal');
-  const [aiDraftSecurityLevel, setAiDraftSecurityLevel] = useState<'normal' | 'strict'>('normal');
+  const [aiSecurityLevel, setAiSecurityLevel] = useState<'normal' | 'strict'>('strict');
+  const [aiDraftSecurityLevel, setAiDraftSecurityLevel] = useState<'normal' | 'strict'>('strict');
   const [aiDraftQuestions, setAiDraftQuestions] = useState<Array<Record<string, any>>>([]);
   const [aiPreviewOpen, setAiPreviewOpen] = useState(false);
   const [aiIsAvailable, setAiIsAvailable] = useState(false);
@@ -58,7 +58,7 @@ function TeacherQuizzesPageInner() {
   const [manualTimeLimit, setManualTimeLimit] = useState('');
   const [manualAttemptLimit, setManualAttemptLimit] = useState('1');
   const [manualAiGrade, setManualAiGrade] = useState(true);
-  const [manualSecurityLevel, setManualSecurityLevel] = useState<'normal' | 'strict'>('normal');
+  const [manualSecurityLevel, setManualSecurityLevel] = useState<'normal' | 'strict'>('strict');
   const [manualIsAvailable, setManualIsAvailable] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
@@ -69,7 +69,7 @@ function TeacherQuizzesPageInner() {
   const [editTimeLimit, setEditTimeLimit] = useState('');
   const [editAttemptLimit, setEditAttemptLimit] = useState('1');
   const [editAiGrade, setEditAiGrade] = useState(true);
-  const [editSecurityLevel, setEditSecurityLevel] = useState<'normal' | 'strict'>('normal');
+  const [editSecurityLevel, setEditSecurityLevel] = useState<'normal' | 'strict'>('strict');
   const [editIsAvailable, setEditIsAvailable] = useState(false);
 
   useEffect(() => {
@@ -110,7 +110,7 @@ function TeacherQuizzesPageInner() {
     setEditTimeLimit(quiz.time_limit_minutes ? String(quiz.time_limit_minutes) : '');
     setEditAttemptLimit(String(quiz.attempt_limit ?? 1));
     setEditAiGrade(Boolean(quiz.ai_grade_on_submit));
-    setEditSecurityLevel((quiz.security_level as 'normal' | 'strict') ?? 'normal');
+    setEditSecurityLevel('strict');
     setEditIsAvailable(Boolean(quiz.is_available));
     setEditOpen(true);
   };
@@ -181,7 +181,7 @@ function TeacherQuizzesPageInner() {
     setAiDraftTimeLimit('');
     setAiDraftAttemptLimit('1');
     setAiDraftAiGrade(true);
-    setAiDraftSecurityLevel('normal');
+    setAiDraftSecurityLevel('strict');
     setAiDraftIsAvailable(false);
     setAiDraftQuestions([]);
   };
@@ -211,31 +211,30 @@ function TeacherQuizzesPageInner() {
     });
     setManualTitle('');
     setManualDescription('');
-    setManualSecurityLevel('normal');
+    setManualSecurityLevel('strict');
     setManualIsAvailable(false);
   };
 
   return (
     <AppShell title="Teacher Dashboard" subtitle="Quizzes" navItems={teacherNav} requiredRole="teacher">
-      <div className="space-y-6">
-        <PageHeader
-          title="Quizzes"
-          description="Create quizzes manually or let AI draft the questions."
-        />
+      <div className="space-y-8 p-6 lg:p-8">
+
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-3xl p-8 lg:p-10" style={{ background: 'var(--brand-blue)' }}>
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white opacity-10" />
+          <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white opacity-5" />
+          <div className="relative">
+            <div className="mb-2 flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-white/70" />
+              <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Quizzes</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white lg:text-4xl">Quizzes</h1>
+            <p className="mt-2 text-sm text-white/70">{quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''} · AI or manual creation</p>
+          </div>
+        </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="rounded-full border border-[rgba(15,23,42,0.12)] bg-white/80 p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setCreateMode('ai')}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                createMode === 'ai'
-                  ? 'bg-[var(--brand-blue-deep)] text-white shadow'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              AI Draft
-            </button>
             <button
               type="button"
               onClick={() => setCreateMode('manual')}
@@ -246,6 +245,17 @@ function TeacherQuizzesPageInner() {
               }`}
             >
               Manual
+            </button>
+            <button
+              type="button"
+              onClick={() => setCreateMode('ai')}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                createMode === 'ai'
+                  ? 'bg-[var(--brand-blue-deep)] text-white shadow'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              AI Draft
             </button>
           </div>
           <div className="text-xs uppercase tracking-[0.2em] text-neutral-400">
@@ -314,14 +324,7 @@ function TeacherQuizzesPageInner() {
               </div>
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Security level</label>
-                <select
-                  className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
-                  value={aiSecurityLevel}
-                  onChange={(event) => setAiSecurityLevel(event.target.value as 'normal' | 'strict')}
-                >
-                  <option value="normal">Normal</option>
-                  <option value="strict">Strict</option>
-                </select>
+                <input disabled value="Strict" className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-gray-50 px-3 text-sm text-neutral-500" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Availability</label>
@@ -416,14 +419,7 @@ function TeacherQuizzesPageInner() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Security level</label>
-                  <select
-                    className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
-                    value={aiDraftSecurityLevel}
-                    onChange={(event) => setAiDraftSecurityLevel(event.target.value as 'normal' | 'strict')}
-                  >
-                    <option value="normal">Normal</option>
-                    <option value="strict">Strict</option>
-                  </select>
+                  <input disabled value="Strict" className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-gray-50 px-3 text-sm text-neutral-500" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Availability</label>
@@ -552,14 +548,7 @@ function TeacherQuizzesPageInner() {
               </div>
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Security level</label>
-                <select
-                  className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
-                  value={manualSecurityLevel}
-                  onChange={(event) => setManualSecurityLevel(event.target.value as 'normal' | 'strict')}
-                >
-                  <option value="normal">Normal</option>
-                  <option value="strict">Strict</option>
-                </select>
+                <input disabled value="Strict" className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-gray-50 px-3 text-sm text-neutral-500" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Availability</label>
@@ -628,12 +617,15 @@ function TeacherQuizzesPageInner() {
                     <Button
                       size="sm"
                       variant="destructive"
+                      className="border border-red-900 bg-red-700 text-white hover:bg-red-800"
+                      style={{ background: '#dc2626', borderColor: '#991b1b', color: '#fff' }}
                       onClick={async () => {
                         const ok = await confirm({
                           title: 'Delete quiz?',
                           description: 'This will remove the quiz and all attempts.',
                           confirmText: 'Delete',
                           cancelText: 'Cancel',
+                          danger: true,
                         });
                         if (!ok) return;
                         await deleteQuiz.mutateAsync(quiz.id);
@@ -707,14 +699,7 @@ function TeacherQuizzesPageInner() {
               </div>
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Security level</label>
-                <select
-                  className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
-                  value={editSecurityLevel}
-                  onChange={(event) => setEditSecurityLevel(event.target.value as 'normal' | 'strict')}
-                >
-                  <option value="normal">Normal</option>
-                  <option value="strict">Strict</option>
-                </select>
+                <input disabled value="Strict" className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-gray-50 px-3 text-sm text-neutral-500" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Availability</label>

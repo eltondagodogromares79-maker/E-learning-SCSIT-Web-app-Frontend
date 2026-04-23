@@ -4,149 +4,212 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useLessons } from '@/features/lessons/hooks/useLessons';
 import { useSubjects } from '@/features/subjects/hooks/useSubjects';
+import { useToggleFavorite } from '@/features/lessons/hooks/useToggleFavorite';
+import { useFavoriteLessons } from '@/features/lessons/hooks/useFavoriteLessons';
+import { Search, BookOpen, FileText, Link2, AlignLeft, ChevronRight, Calendar, Heart } from 'lucide-react';
+
+type TypeFilter = 'all' | 'text' | 'pdf' | 'link' | 'favorites';
+type SortOrder = 'newest' | 'oldest';
+
+const TYPE_META: Record<string, { label: string; icon: React.ReactNode; color: string; light: string }> = {
+  pdf:  { label: 'PDF',  icon: <FileText className="h-5 w-5" />,  color: '#dc2626', light: 'rgba(220,38,38,0.08)'  },
+  link: { label: 'Link', icon: <Link2 className="h-5 w-5" />,     color: '#0891b2', light: 'rgba(8,145,178,0.08)'  },
+  text: { label: 'Text', icon: <AlignLeft className="h-5 w-5" />, color: '#059669', light: 'rgba(5,150,105,0.08)'  },
+};
+
+const FILTERS: { value: TypeFilter; label: string; icon?: React.ReactNode }[] = [
+  { value: 'all',       label: 'All' },
+  { value: 'favorites', label: 'My Favorites', icon: <Heart className="h-3.5 w-3.5" /> },
+  { value: 'pdf',       label: 'PDF' },
+  { value: 'link',      label: 'Link' },
+  { value: 'text',      label: 'Text' },
+];
 
 export default function StudentLessonsPage() {
   const { data: lessons = [] } = useLessons();
   const { data: subjects = [] } = useSubjects();
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'text' | 'pdf' | 'link' | 'video'>('all');
-  const subjectLookup = Object.fromEntries(subjects.map((subject) => [subject.id, subject.name]));
-  const publishedCount = lessons.length;
-  const lastWeekThreshold = new Date();
-  lastWeekThreshold.setDate(lastWeekThreshold.getDate() - 7);
-  const recentCount = lessons.filter((lesson) => {
-    const created = new Date(lesson.created_at);
-    return !Number.isNaN(created.getTime()) && created >= lastWeekThreshold;
-  }).length;
-  const savedItems = lessons.filter((lesson) => Boolean(lesson.file_url)).length;
-  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
+
+  const subjectLookup = Object.fromEntries(subjects.map((s) => [s.id, s.name]));
+  const toggleFavorite = useToggleFavorite();
+  const { data: favorites = [] } = useFavoriteLessons();
+  const favoriteIds = useMemo(() => new Set(favorites.map((f) => f.id)), [favorites]);
+  const [sectionFilter, setSectionFilter] = useState('');
+
+  const sections = useMemo(() => {
+    const names = new Set(lessons.map((l) => l.subject_name ?? subjectLookup[l.subject_id] ?? '').filter(Boolean));
+    return Array.from(names).sort();
+  }, [lessons, subjectLookup]);
+
   const filteredLessons = useMemo(() => {
-    return lessons.filter((lesson) => {
-      const matchesType = typeFilter === 'all' || lesson.content_type === typeFilter;
-      if (!normalizedSearch) return matchesType;
-      const haystack = [
-        lesson.title,
-        lesson.subject_name ?? subjectLookup[lesson.subject_id] ?? '',
-      ]
-        .join(' ')
-        .toLowerCase();
-      return matchesType && haystack.includes(normalizedSearch);
-    });
-  }, [lessons, typeFilter, normalizedSearch, subjectLookup]);
+    const q = searchTerm.trim().toLowerCase();
+    const source = typeFilter === 'favorites' ? favorites : lessons;
+    return [...source]
+      .filter((lesson) => {
+        const subjectName = lesson.subject_name ?? subjectLookup[lesson.subject_id] ?? '';
+        const matchesType = typeFilter === 'all' || typeFilter === 'favorites' || lesson.content_type === typeFilter;
+        const matchesSection = !sectionFilter || subjectName === sectionFilter;
+        if (!q) return matchesType && matchesSection;
+        const haystack = [lesson.title, subjectName].join(' ').toLowerCase();
+        return matchesType && matchesSection && haystack.includes(q);
+      })
+      .sort((left, right) => {
+        const leftTime = new Date(left.created_at).getTime();
+        const rightTime = new Date(right.created_at).getTime();
+        return sortOrder === 'newest' ? rightTime - leftTime : leftTime - rightTime;
+      });
+  }, [lessons, favorites, sortOrder, typeFilter, searchTerm, subjectLookup, sectionFilter]);
 
   return (
-    <AppShell title="Student Dashboard" subtitle="Lessons" navItems={studentNav} requiredRole="student">
-      <div className="space-y-6">
-        <PageHeader title="Lessons" description="Review published lessons and learning resources." />
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { label: 'Published', value: `${publishedCount}`, note: `${recentCount} added this week` },
-            { label: 'Resources with files', value: `${savedItems}`, note: 'Lessons with attachments' },
-            { label: 'Subjects covered', value: `${subjects.length}`, note: 'Lessons across your subjects' },
-          ].map((stat) => (
-            <Card key={stat.label}>
-              <CardContent className="p-5">
-                <div className="text-xs uppercase tracking-[0.2em] text-neutral-400">{stat.label}</div>
-                <div className="mt-2 text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>{stat.value}</div>
-                <div className="mt-1 text-xs text-neutral-500">{stat.note}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="flex flex-col gap-3 rounded-2xl border border-[rgba(17,17,17,0.12)] bg-white p-4 md:flex-row md:items-center md:justify-between">
-          <Input
-            placeholder="Search lessons"
-            className="md:w-72"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-          />
-          <div className="flex flex-wrap gap-2">
-            <select
-              className="h-10 rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
-              value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
-            >
-              <option value="all">All types</option>
-              <option value="text">Text</option>
-              <option value="pdf">PDF</option>
-              <option value="link">Link</option>
-              <option value="video">Video</option>
-            </select>
-            <Badge variant="outline">{filteredLessons.length} results</Badge>
-          </div>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-[1.6fr,0.8fr]">
-          <div className="grid gap-6 md:grid-cols-2">
-            {filteredLessons.length === 0 ? (
-              <div className="col-span-full rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
-                No lessons found.
+    <AppShell title="Student Dashboard" subtitle="Learning Materials" navItems={studentNav} requiredRole="student">
+      <div className="space-y-8 p-6 lg:p-8">
+
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-3xl p-8 lg:p-10" style={{ background: 'var(--brand-blue)' }}>
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white opacity-10" />
+          <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white opacity-5" />
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-white/70" />
+                <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Learning Materials</span>
               </div>
-            ) : (
-              filteredLessons.map((lesson) => (
-                <motion.div
-                  key={lesson.id}
-                  whileHover={{ y: -4 }}
-                  transition={{ duration: 0.2 }}
-                  className="h-full"
-                >
-                  <Card className="h-full">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle>{lesson.title}</CardTitle>
-                      <Link href={`/dashboard/student/lessons/${lesson.id}`} className="text-xs text-neutral-700 hover:underline">
-                        View
-                      </Link>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm text-neutral-600">
-                      <div className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-                        {lesson.subject_name ?? subjectLookup[lesson.subject_id] ?? 'General'}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{lesson.content_type.toUpperCase()}</Badge>
-                        <Badge variant="muted">Uploaded</Badge>
-                      </div>
-                      <div className="text-xs text-neutral-500">
-                        Added {new Date(lesson.created_at).toLocaleDateString()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))
-            )}
-          </div>
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Continue learning</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-neutral-600">
-                {['Linear Equations Refresher', 'Persuasive Writing Basics'].map((item) => (
-                  <div key={item} className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-3">
-                    {item}
-                  </div>
-                ))}
-                <Button size="sm">Resume last lesson</Button>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Study tips</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-neutral-600">
-                <div>Set a 20-minute focus timer.</div>
-                <div>Review key terms after each lesson.</div>
-                <div>Save summaries to your notes.</div>
-              </CardContent>
-            </Card>
+              <h1 className="text-3xl font-bold text-white lg:text-4xl">Your Learning Materials</h1>
+              <p className="mt-2 text-sm text-white/70">
+                {lessons.length} material{lessons.length !== 1 ? 's' : ''} available
+              </p>
+            </div>
+            {/* Search */}
+            <div className="relative w-full lg:w-80">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+              <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search learning materials or subjects…"
+                className="w-full rounded-xl border border-white/20 bg-white/10 py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/40 focus:bg-white/15"
+              />
+            </div>
           </div>
         </div>
+
+        {/* ── Filter pills ── */}
+        <div className="flex flex-wrap items-center gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setTypeFilter(f.value)}
+              className="flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold transition-all"
+              style={
+                typeFilter === f.value
+                  ? { background: f.value === 'favorites' ? '#dc2626' : 'var(--brand-blue)', color: '#fff', borderColor: f.value === 'favorites' ? '#dc2626' : 'var(--brand-blue)' }
+                  : { background: 'var(--surface)', color: 'var(--muted-foreground)', borderColor: 'var(--border)' }
+              }
+            >
+              {f.icon}
+              {f.label}
+            </button>
+          ))}
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+            className="rounded-full border px-4 py-1.5 text-sm font-semibold outline-none"
+            style={{ background: 'var(--surface)', color: 'var(--foreground)', borderColor: 'var(--border)' }}
+          >
+            <option value="newest">Newest uploaded</option>
+            <option value="oldest">Oldest uploaded</option>
+          </select>
+          <select
+            value={sectionFilter}
+            onChange={(e) => setSectionFilter(e.target.value)}
+            className="rounded-full border px-4 py-1.5 text-sm font-semibold outline-none"
+            style={{ background: 'var(--surface)', color: 'var(--foreground)', borderColor: 'var(--border)' }}
+          >
+            <option value="">All Subjects</option>
+            {sections.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <span className="ml-auto text-sm" style={{ color: 'var(--muted-foreground)' }}>
+            {filteredLessons.length} result{filteredLessons.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {/* ── Cards ── */}
+        {filteredLessons.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
+            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
+            <BookOpen className="h-8 w-8 opacity-30" />
+            <p className="text-sm">No learning materials found.</p>
+          </div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {filteredLessons.map((lesson) => {
+              const meta = TYPE_META[lesson.content_type] ?? TYPE_META.text;
+              const subjectName = lesson.subject_name ?? subjectLookup[lesson.subject_id] ?? 'General';
+              return (
+                <motion.div key={lesson.id} whileHover={{ y: -4 }} transition={{ duration: 0.18 }} className="h-full">
+                  <Link
+                    href={`/dashboard/student/lessons/${lesson.id}`}
+                    className="flex h-full flex-col overflow-hidden rounded-2xl border"
+                    style={{ borderColor: 'var(--border)', background: 'var(--surface)', boxShadow: 'var(--shadow-card)' }}
+                  >
+                    {/* Colored top bar */}
+                    <div className="h-1.5 w-full" style={{ background: meta.color }} />
+
+                    <div className="flex flex-1 flex-col p-6">
+                      {/* Icon + type */}
+                      <div className="mb-4 flex items-center justify-between">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: meta.light, color: meta.color }}>
+                          {meta.icon}
+                        </div>
+                        <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-widest"
+                          style={{ background: meta.light, color: meta.color }}>
+                          {meta.label}
+                        </span>
+                      </div>
+
+                      {/* Subject */}
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--muted-foreground)' }}>
+                        {subjectName}
+                      </p>
+
+                      {/* Title */}
+                      <h3 className="mb-3 flex-1 text-base font-bold leading-snug" style={{ color: 'var(--foreground)' }}>
+                        {lesson.title}
+                      </h3>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                          <Calendar className="h-3.5 w-3.5" />
+                          {new Date(lesson.created_at).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => { e.preventDefault(); toggleFavorite.mutate(lesson.id); }}
+                            className="flex items-center justify-center rounded-full p-1.5 transition-colors hover:bg-[var(--surface-2)]"
+                            title={favoriteIds.has(lesson.id) ? 'Remove from favorites' : 'Add to favorites'}
+                          >
+                            <Heart
+                              className="h-4 w-4"
+                              style={{ color: favoriteIds.has(lesson.id) ? '#dc2626' : 'var(--muted-foreground)', fill: favoriteIds.has(lesson.id) ? '#dc2626' : 'none' }}
+                            />
+                          </button>
+                          <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: meta.color }}>
+                            Open <ChevronRight className="h-3.5 w-3.5" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </AppShell>
   );

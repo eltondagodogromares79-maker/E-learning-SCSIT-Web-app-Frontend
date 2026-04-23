@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { CalendarClock, Users, ClipboardCheck } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,37 +131,41 @@ export default function TeacherAttendancePage() {
 
   return (
     <AppShell title="Teacher Dashboard" subtitle="Attendance" navItems={teacherNav} requiredRole="teacher">
-      <div className="space-y-6">
-        <PageHeader
-          title="Attendance"
-          description="Create sessions and mark attendance per class."
-        />
-
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { label: 'Total sessions', value: sessions.length, icon: CalendarClock },
-            { label: 'Students in session', value: activeSessionId ? records.length : 0, icon: Users },
-            { label: 'Marked present', value: counts.present, icon: ClipboardCheck },
-          ].map((stat) => (
-            <Card key={stat.label} className="border border-[rgba(15,23,42,0.08)] bg-white/95 shadow-sm">
-              <CardContent className="flex items-center justify-between p-5">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-neutral-400">{stat.label}</div>
-                  <div className="mt-2 text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>
-                    {stat.value}
+      <div className="space-y-8 p-6 lg:p-8">
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-3xl p-8 lg:p-10" style={{ background: 'var(--brand-blue)' }}>
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white opacity-10" />
+          <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white opacity-5" />
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <CalendarClock className="h-5 w-5 text-white/70" />
+                <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Attendance</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white lg:text-4xl">Attendance</h1>
+              <p className="mt-2 text-sm text-white/70">Create sessions and mark attendance per class.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { label: 'Total Sessions', value: sessions.length, icon: <CalendarClock className="h-4 w-4" /> },
+                { label: 'In Session',     value: activeSessionId ? records.length : 0, icon: <Users className="h-4 w-4" /> },
+                { label: 'Present',        value: counts.present,  icon: <ClipboardCheck className="h-4 w-4" /> },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 backdrop-blur-sm">
+                  <span className="text-white/60">{s.icon}</span>
+                  <div>
+                    <div className="text-lg font-bold leading-none text-white">{s.value}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-white/50">{s.label}</div>
                   </div>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(37,99,235,0.1)] text-[var(--brand-blue-deep)]">
-                  <stat.icon className="h-5 w-5" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              ))}
+            </div>
+          </div>
         </div>
 
-        <Card className="border border-[rgba(15,23,42,0.08)] bg-white/95 shadow-sm">
+        <Card className="border shadow-sm" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
           <CardHeader className="space-y-1">
-            <CardTitle>Create attendance session</CardTitle>
+            <CardTitle>Create Attendance Session</CardTitle>
             <div className="text-xs text-neutral-500">
               {selectedSection
                 ? `${selectedSection.subject_name} • ${selectedSection.section_name}`
@@ -241,7 +244,7 @@ export default function TeacherAttendancePage() {
         </Card>
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr,1fr]">
-          <Card className="border border-[rgba(15,23,42,0.08)] bg-white/95 shadow-sm">
+          <Card className="border shadow-sm" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
             <CardHeader>
               <CardTitle>Sessions {selectedSection ? `for ${selectedSection.subject_name}` : ''}</CardTitle>
             </CardHeader>
@@ -309,9 +312,9 @@ export default function TeacherAttendancePage() {
             </CardContent>
           </Card>
 
-          <Card className="border border-[rgba(15,23,42,0.08)] bg-white/95 shadow-sm">
+          <Card className="border shadow-sm" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
             <CardHeader>
-              <CardTitle>Mark attendance</CardTitle>
+              <CardTitle>Mark Attendance</CardTitle>
               {activeSession ? (
                 <div className="text-xs text-neutral-500">
                   {activeSession.title || 'Attendance session'} • {new Date(activeSession.scheduled_at).toLocaleString()}

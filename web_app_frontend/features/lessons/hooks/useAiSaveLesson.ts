@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { lessonService } from '@/features/lessons/services/lessonService';
 import { useToast } from '@/components/ui/toast';
-import axios from 'axios';
+import { handleAiError } from '@/lib/aiError';
 
 export function useAiSaveLesson() {
   const queryClient = useQueryClient();
@@ -17,14 +17,8 @@ export function useAiSaveLesson() {
     }) => lessonService.aiSave(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['lessons'] });
-      showToast({ title: 'Lesson saved', description: 'AI draft saved successfully.', variant: 'success' });
+      showToast({ title: '✅ Material Saved', description: 'AI draft saved successfully.', variant: 'success' });
     },
-    onError: (err) => {
-      if (axios.isAxiosError(err) && err.response?.status === 429) {
-        showToast({ title: 'Rate limited', description: 'Rate limited — try again in 60s.', variant: 'error' });
-        return;
-      }
-      showToast({ title: 'Save failed', description: 'Unable to save AI draft.', variant: 'error' });
-    },
+    onError: (err) => handleAiError(err, showToast, 'lesson save'),
   });
 }

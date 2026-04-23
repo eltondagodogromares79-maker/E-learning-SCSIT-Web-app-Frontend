@@ -14,7 +14,7 @@ export function StatsGrid({ stats, className }: { stats: StatItem[]; className?:
       {stats.map((stat, i) => (
         <Card key={stat.label} className="relative overflow-hidden">
           <CardContent className="p-5">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: 'rgba(15,23,42,0.5)' }}>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--muted-foreground)' }}>
               {stat.label}
             </div>
             <div className="mt-2 text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>

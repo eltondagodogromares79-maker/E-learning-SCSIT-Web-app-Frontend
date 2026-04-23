@@ -24,6 +24,8 @@ export interface SectionSubject {
   term_id: string;
   term_label?: string;
   teacher_name?: string;
+  schedule_days?: string;
+  schedule_time?: string;
 }
 
 export interface SubjectContentResponse {

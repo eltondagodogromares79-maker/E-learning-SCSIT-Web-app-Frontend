@@ -12,7 +12,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   outline: '',
   ghost: '',
   secondary: '',
-  destructive: 'bg-rose-600 text-white shadow-sm hover:bg-rose-700',
+  destructive: 'bg-red-700 text-white shadow-[0_10px_24px_-16px_rgba(185,28,28,0.9)] hover:bg-red-800 active:scale-[0.98]',
   link: 'underline-offset-4 hover:underline',
 };
 
@@ -21,7 +21,7 @@ const variantInlineStyles: Record<ButtonVariant, React.CSSProperties> = {
   outline: { border: '1px solid var(--border)', color: 'var(--brand-blue-deep)', background: 'rgba(255,255,255,0.7)' },
   ghost: { color: 'var(--brand-blue-deep)', background: 'transparent' },
   secondary: { background: 'var(--surface-2)', color: 'var(--foreground)', border: '1px solid var(--border)' },
-  destructive: {},
+  destructive: { background: '#b91c1c', color: '#fff', border: '1px solid #991b1b' },
   link: { color: 'var(--brand-blue-deep)' },
 };
 

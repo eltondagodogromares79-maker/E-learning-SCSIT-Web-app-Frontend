@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,12 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useLessons } from '@/features/lessons/hooks/useLessons';
+import { BookCopy } from 'lucide-react';
 import { useAiGenerateLesson } from '@/features/lessons/hooks/useAiGenerateLesson';
 import { useAiSaveLesson } from '@/features/lessons/hooks/useAiSaveLesson';
 import { useCreateLesson } from '@/features/lessons/hooks/useCreateLesson';
+import { useDeleteLesson } from '@/features/lessons/hooks/useDeleteLesson';
 import { useToast } from '@/components/ui/toast';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { lessonService } from '@/features/lessons/services/lessonService';
+import { useConfirm } from '@/components/ui/confirm';
 
 function TeacherLessonsPageInner() {
   const { data: lessons = [] } = useLessons();
@@ -25,8 +27,10 @@ function TeacherLessonsPageInner() {
   const aiGenerate = useAiGenerateLesson();
   const aiSave = useAiSaveLesson();
   const createLesson = useCreateLesson();
+  const deleteLesson = useDeleteLesson();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
+  const confirm = useConfirm();
 
   const [sectionSubjectId, setSectionSubjectId] = useState('');
   const [lessonType, setLessonType] = useState<'text' | 'pdf'>('text');
@@ -42,7 +46,7 @@ function TeacherLessonsPageInner() {
   const [manualType, setManualType] = useState<'text' | 'pdf' | 'link' | 'video'>('text');
   const [manualFileUrl, setManualFileUrl] = useState('');
   const [manualFile, setManualFile] = useState<File | null>(null);
-  const [createMode, setCreateMode] = useState<'ai' | 'manual'>('ai');
+  const [createMode, setCreateMode] = useState<'ai' | 'manual'>('manual');
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'text' | 'pdf' | 'link' | 'video'>('all');
 
@@ -151,26 +155,25 @@ function TeacherLessonsPageInner() {
   };
 
   return (
-    <AppShell title="Teacher Dashboard" subtitle="Lessons" navItems={teacherNav} requiredRole="teacher">
-      <div className="space-y-6">
-        <PageHeader
-          title="Create lessons"
-          description="Choose AI or manual creation. AI drafts a lesson; manual lets you upload or write your own."
-        />
+    <AppShell title="Teacher Dashboard" subtitle="Learning materials" navItems={teacherNav} requiredRole="teacher">
+      <div className="space-y-8 p-6 lg:p-8">
+
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-3xl p-8 lg:p-10" style={{ background: 'var(--brand-blue)' }}>
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white opacity-10" />
+          <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white opacity-5" />
+          <div className="relative">
+            <div className="mb-2 flex items-center gap-2">
+              <BookCopy className="h-5 w-5 text-white/70" />
+              <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Learning Materials</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white lg:text-4xl">Learning Materials</h1>
+            <p className="mt-2 text-sm text-white/70">{lessons.length} material{lessons.length !== 1 ? 's' : ''} published · AI or manual creation</p>
+          </div>
+        </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="rounded-full border border-[rgba(15,23,42,0.12)] bg-white/80 p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setCreateMode('ai')}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                createMode === 'ai'
-                  ? 'bg-[var(--brand-blue-deep)] text-white shadow'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              AI Draft
-            </button>
             <button
               type="button"
               onClick={() => setCreateMode('manual')}
@@ -182,16 +185,27 @@ function TeacherLessonsPageInner() {
             >
               Manual
             </button>
+            <button
+              type="button"
+              onClick={() => setCreateMode('ai')}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                createMode === 'ai'
+                  ? 'bg-[var(--brand-blue-deep)] text-white shadow'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              AI Draft
+            </button>
           </div>
           <div className="text-xs uppercase tracking-[0.2em] text-neutral-400">
-            {createMode === 'ai' ? 'Generate a draft with AI' : 'Create a lesson yourself'}
+            {createMode === 'ai' ? 'Generate a draft with AI' : 'Create a learning material yourself'}
           </div>
         </div>
 
         {createMode === 'ai' ? (
           <Card className="border border-[rgba(15,23,42,0.08)] bg-white/90 shadow-sm">
             <CardHeader>
-              <CardTitle>AI lesson request</CardTitle>
+              <CardTitle>AI learning material request</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -210,7 +224,7 @@ function TeacherLessonsPageInner() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Lesson type</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Material type</label>
                 <select
                   className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
                   value={lessonType}
@@ -225,7 +239,7 @@ function TeacherLessonsPageInner() {
                 <textarea
                   rows={4}
                   className="w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 py-2 text-sm text-neutral-700"
-                  placeholder="Example: Create a lesson about cellular respiration for Grade 10 with a short activity."
+                  placeholder="Example: Create a learning material about cellular respiration for Grade 10 with a short activity."
                   value={prompt}
                   onChange={(event) => setPrompt(event.target.value)}
                 />
@@ -235,14 +249,14 @@ function TeacherLessonsPageInner() {
                   Resource URL (optional)
                 </label>
                 <Input
-                  placeholder="Paste a link if you want the lesson to reference a specific resource."
+                  placeholder="Paste a link if you want the material to reference a specific resource."
                   value={resourceUrl}
                   onChange={(event) => setResourceUrl(event.target.value)}
                 />
               </div>
               <div className="md:col-span-2 flex flex-wrap items-center gap-3">
                 <Button onClick={handleGenerate} disabled={aiGenerate.isPending || !sectionSubjectId || !prompt.trim()}>
-                  {aiGenerate.isPending ? 'Generating…' : 'Generate lesson'}
+                  {aiGenerate.isPending ? 'Generating…' : 'Generate material'}
                 </Button>
                 {aiDraftTitle ? (
                   <span className="text-xs text-neutral-500">Draft ready below. Review before saving.</span>
@@ -256,7 +270,7 @@ function TeacherLessonsPageInner() {
           <Dialog open={aiPreviewOpen} onOpenChange={setAiPreviewOpen}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>AI lesson preview</DialogTitle>
+                <DialogTitle>AI learning material preview</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
@@ -295,7 +309,7 @@ function TeacherLessonsPageInner() {
                   </Button>
                 ) : null}
                 <Button onClick={handleAiSave} disabled={aiSave.isPending || !aiDraftTitle.trim()}>
-                  {aiSave.isPending ? 'Saving…' : 'Save lesson'}
+                  {aiSave.isPending ? 'Saving…' : 'Save material'}
                 </Button>
                 <Button
                   variant="outline"
@@ -317,7 +331,7 @@ function TeacherLessonsPageInner() {
         {createMode === 'manual' ? (
           <Card className="border border-[rgba(15,23,42,0.08)] bg-white/90 shadow-sm">
             <CardHeader>
-              <CardTitle>Manual lesson</CardTitle>
+              <CardTitle>Manual learning material</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -336,7 +350,7 @@ function TeacherLessonsPageInner() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Lesson type</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Material type</label>
                 <select
                   className="h-10 w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
                   value={manualType}
@@ -351,7 +365,7 @@ function TeacherLessonsPageInner() {
               <div className="space-y-2 md:col-span-2">
                 <label className="text-xs uppercase tracking-[0.2em] text-neutral-400">Title</label>
                 <Input
-                  placeholder="Lesson title"
+                  placeholder="Material title"
                   value={manualTitle}
                   onChange={(event) => setManualTitle(event.target.value)}
                 />
@@ -361,7 +375,7 @@ function TeacherLessonsPageInner() {
                 <textarea
                   rows={4}
                   className="w-full rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 py-2 text-sm text-neutral-700"
-                  placeholder="Write lesson summary or content"
+                  placeholder="Write material summary or content"
                   value={manualDescription}
                   onChange={(event) => setManualDescription(event.target.value)}
                 />
@@ -384,7 +398,7 @@ function TeacherLessonsPageInner() {
               </div>
               <div className="md:col-span-2">
                 <Button onClick={handleManualSave} disabled={createLesson.isPending || !manualTitle.trim() || !sectionSubjectId}>
-                  {createLesson.isPending ? 'Saving…' : 'Save lesson'}
+                  {createLesson.isPending ? 'Saving…' : 'Save material'}
                 </Button>
               </div>
             </CardContent>
@@ -393,7 +407,7 @@ function TeacherLessonsPageInner() {
 
         <Card className="border border-[rgba(15,23,42,0.08)] bg-white/90 shadow-sm">
           <CardHeader>
-            <CardTitle>Recent lessons</CardTitle>
+            <CardTitle>Recent learning materials</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid gap-3 md:grid-cols-[1.4fr,0.6fr]">
@@ -421,13 +435,12 @@ function TeacherLessonsPageInner() {
               </div>
             </div>
             {filteredLessons.length === 0 ? (
-              <div className="text-sm text-neutral-500">No lessons yet.</div>
+              <div className="text-sm text-neutral-500">No learning materials yet.</div>
             ) : (
               filteredLessons.slice(0, 6).map((lesson) => (
-                <Link
+                <div
                   key={lesson.id}
-                  href={`/dashboard/teacher/lessons/${lesson.id}`}
-                  className="block rounded-xl border border-[rgba(15,23,42,0.08)] bg-[var(--surface-2)] p-4 transition hover:border-[var(--brand-blue-deep)]"
+                  className="rounded-xl border border-[rgba(15,23,42,0.08)] bg-[var(--surface-2)] p-4 transition hover:border-[var(--brand-blue-deep)]"
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-semibold text-neutral-900">{lesson.title}</div>
@@ -436,7 +449,31 @@ function TeacherLessonsPageInner() {
                   <div className="mt-2 text-xs text-neutral-500">
                     {lesson.subject_name} • Added {new Date(lesson.created_at).toLocaleDateString()}
                   </div>
-                </Link>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button as={Link} href={`/dashboard/teacher/lessons/${lesson.id}`} size="sm" variant="outline">
+                      View material
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="border border-red-900 bg-red-700 text-white hover:bg-red-800"
+                      style={{ background: '#dc2626', borderColor: '#991b1b', color: '#fff' }}
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: 'Delete learning material?',
+                          description: 'This will remove the learning material from the class.',
+                          confirmText: 'Delete',
+                          cancelText: 'Cancel',
+                          danger: true,
+                        });
+                        if (!ok) return;
+                        await deleteLesson.mutateAsync(lesson.id);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
               ))
             )}
           </CardContent>

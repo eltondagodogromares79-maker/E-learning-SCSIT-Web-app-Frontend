@@ -25,6 +25,9 @@ export interface User {
     id: string;
     student_number?: string;
     admission_date?: string;
+    emergency_contact_name?: string;
+    emergency_contact_phone?: string;
+    emergency_contact_relationship?: string;
     enrollments?: Array<{
       id: string;
       section?: string | null;

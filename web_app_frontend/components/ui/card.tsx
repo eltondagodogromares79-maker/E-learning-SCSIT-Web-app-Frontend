@@ -5,8 +5,9 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
   ({ className, style, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('rounded-[var(--radius-card)] bg-white/90 backdrop-blur-sm', className)}
+      className={cn('rounded-[var(--radius-card)] backdrop-blur-sm', className)}
       style={{
+        background: 'var(--card-bg, rgba(255,255,255,0.9))',
         border: '1px solid var(--border)',
         boxShadow: 'var(--shadow-card)',
         ...style,

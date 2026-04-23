@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { quizService } from '@/features/quizzes/services/quizService';
 import { useToast } from '@/components/ui/toast';
-import axios from 'axios';
+import { handleAiError } from '@/lib/aiError';
 
 export function useAiGenerateQuiz() {
   const { showToast } = useToast();
@@ -18,14 +18,8 @@ export function useAiGenerateQuiz() {
       is_available?: boolean;
     }) => quizService.aiPreview(payload),
     onSuccess: async () => {
-      showToast({ title: 'Draft ready', description: 'Review the AI draft before saving.', variant: 'success' });
+      showToast({ title: '✨ Draft Ready', description: 'Review the AI draft before saving.', variant: 'success' });
     },
-    onError: (err) => {
-      if (axios.isAxiosError(err) && err.response?.status === 429) {
-        showToast({ title: 'Rate limited', description: 'Rate limited — try again in 60s.', variant: 'error' });
-        return;
-      }
-      showToast({ title: 'AI generation failed', description: 'You can still create quizzes manually.', variant: 'error' });
-    },
+    onError: (err) => handleAiError(err, showToast, 'quiz generation'),
   });
 }

@@ -1,206 +1,293 @@
 'use client';
 
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 import AppShell from '@/components/layout/AppShell';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { StatsGrid } from '@/components/layout/StatsGrid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { studentNav } from '@/components/navigation/nav-config';
-import { useSubjects } from '@/features/subjects/hooks/useSubjects';
+import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { useLessons } from '@/features/lessons/hooks/useLessons';
+import { useFavoriteLessons } from '@/features/lessons/hooks/useFavoriteLessons';
 import { useAssignments } from '@/features/assignments/hooks/useAssignments';
 import { useQuizzes } from '@/features/quizzes/hooks/useQuizzes';
-import { useProgress } from '@/features/progress/hooks/useProgress';
-import { useStudentStats } from '@/features/dashboard/hooks/useDashboardStats';
 import { useAssignmentSubmissions } from '@/features/assignments/hooks/useAssignmentSubmissions';
 import { useQuizAttempts } from '@/features/quizzes/hooks/useQuizAttempts';
+import { useMemo, useState } from 'react';
+import { Search, User, ChevronRight, GraduationCap, BookOpen, ClipboardList, HelpCircle, Clock, CalendarDays, Heart } from 'lucide-react';
+
+const ACCENT_COLORS = [
+  { bg: '#0D1282', light: 'rgba(13,18,130,0.08)' },
+  { bg: '#7c3aed', light: 'rgba(124,58,237,0.08)' },
+  { bg: '#0891b2', light: 'rgba(8,145,178,0.08)' },
+  { bg: '#059669', light: 'rgba(5,150,105,0.08)' },
+  { bg: '#d97706', light: 'rgba(217,119,6,0.08)' },
+  { bg: '#dc2626', light: 'rgba(220,38,38,0.08)' },
+];
 
 export default function StudentDashboardPage() {
-  const { data: subjects = [] } = useSubjects();
+  const { data: subjects = [] } = useSectionSubjects();
   const { data: lessons = [] } = useLessons();
+  const { data: favorites = [] } = useFavoriteLessons();
   const { data: assignments = [] } = useAssignments();
   const { data: quizzes = [] } = useQuizzes();
-  const { data: progress } = useProgress();
-  const { data: stats = [] } = useStudentStats();
   const { data: submissions = [] } = useAssignmentSubmissions();
   const { data: quizAttempts = [] } = useQuizAttempts();
-  const subjectLookup = Object.fromEntries(subjects.map((subject) => [subject.code, subject.name]));
+  const [query, setQuery] = useState('');
 
-  const assignmentLookup = Object.fromEntries(assignments.map((assignment) => [assignment.id, assignment]));
-  const quizLookup = Object.fromEntries(quizzes.map((quiz) => [quiz.id, quiz]));
+  const submissionLookup = Object.fromEntries(submissions.map((s) => [s.assignment_id, s]));
+  const attemptLookup = Object.fromEntries(quizAttempts.filter((a) => a.submitted_at).map((a) => [a.quiz_id, a]));
 
-  const recentRecords = [
-    ...submissions
-      .filter((submission) => submission.graded_at || typeof submission.score === 'number')
-      .map((submission) => {
-        const assignment = assignmentLookup[submission.assignment_id];
-        return {
-          id: `assignment-${submission.id}`,
-          type: 'Assignment',
-          title: assignment?.title ?? 'Assignment',
-          subject: assignment?.subject_code ? (subjectLookup[assignment.subject_code] ?? assignment.subject_code) : '—',
-          score: typeof submission.score === 'number' ? submission.score : null,
-          at: submission.graded_at ?? submission.submitted_at ?? '',
-        };
-      }),
-    ...quizAttempts.map((attempt) => {
-      const quiz = quizLookup[attempt.quiz_id];
-      return {
-        id: `quiz-${attempt.id}`,
-        type: 'Quiz',
-        title: quiz?.title ?? attempt.quiz_title ?? 'Quiz',
-        subject: quiz?.subject_name ?? '—',
-        score: typeof attempt.score === 'number' ? attempt.score : attempt.raw_score ?? null,
-        at: attempt.submitted_at ?? attempt.started_at ?? '',
+  const filteredSubjects = useMemo(() => {
+    const trimmed = query.trim().toLowerCase();
+    const list = trimmed
+      ? subjects.filter((s) =>
+          [s.subject_name, s.section_name, s.teacher_name].filter(Boolean).join(' ').toLowerCase().includes(trimmed)
+        )
+      : [...subjects];
+
+    return list.sort((a, b) => {
+      const parseTime = (t?: string) => {
+        if (!t) return Infinity;
+        const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!match) return Infinity;
+        let hours = parseInt(match[1]);
+        const minutes = parseInt(match[2]);
+        const period = match[3].toUpperCase();
+        if (period === 'PM' && hours !== 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+        return hours * 60 + minutes;
       };
-    }),
-  ]
-    .filter((record) => record.at)
-    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-    .slice(0, 5);
+      return parseTime(a.schedule_time) - parseTime(b.schedule_time);
+    });
+  }, [query, subjects]);
+
+  const previewLessons = lessons.slice(0, 4);
+  const pendingAssignments = assignments.filter((a) => !submissionLookup[a.id]).slice(0, 4);
+  const pendingQuizzes = quizzes.filter((q) => !attemptLookup[q.id]).slice(0, 4);
+
   return (
-    <AppShell title="Student Dashboard" subtitle="Welcome back" navItems={studentNav} requiredRole="student">
-      <div className="space-y-6">
-        <PageHeader
-          title="Your learning overview"
-          description="Stay on track with upcoming work and performance insights."
-        />
+    <AppShell title="Student Dashboard" subtitle="Home" navItems={studentNav} requiredRole="student">
+      <div className="space-y-8 p-6 lg:p-8">
 
-        <StatsGrid stats={stats} />
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-3xl p-8 lg:p-10" style={{ background: 'var(--brand-blue)' }}>
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full opacity-10 bg-white" />
+          <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full opacity-5 bg-white" />
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-white/70" />
+                <span className="text-sm font-semibold uppercase tracking-widest text-white/60">My Subjects</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white lg:text-4xl">Your Enrolled Subjects</h1>
+              <p className="mt-2 text-sm text-white/70">
+                {subjects.length} subject{subjects.length !== 1 ? 's' : ''} enrolled this year
+              </p>
+            </div>
+            <div className="relative w-full lg:w-80">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name, code, teacher…"
+                className="w-full rounded-xl border border-white/20 bg-white/10 py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/40 focus:bg-white/15"
+              />
+            </div>
+          </div>
+        </div>
 
-        <section id="subjects" className="grid gap-6 lg:grid-cols-[1.4fr,1fr]">
-          <Card>
+        {/* ── Subject Cards ── */}
+        {filteredSubjects.length === 0 ? (
+          <div className="rounded-2xl border p-16 text-center text-sm"
+            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
+            {query.trim() ? `No subjects found for "${query.trim()}".` : 'No subjects enrolled yet.'}
+          </div>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {filteredSubjects.map((subject, i) => {
+              const accent = ACCENT_COLORS[i % ACCENT_COLORS.length];
+              return (
+                <motion.div key={subject.id} whileHover={{ y: -4, boxShadow: '0 20px 50px -20px rgba(0,0,0,0.18)' }} transition={{ duration: 0.18 }} className="h-full">
+                  <Link href={`/dashboard/student/subjects/${subject.subject_id}`} className="flex h-full flex-col overflow-hidden rounded-2xl border-2"
+                    style={{ borderColor: accent.bg, background: 'var(--surface)', boxShadow: 'var(--shadow-card)' }}>
+                    <div className="h-1.5 w-full" style={{ background: accent.bg }} />
+                    <div className="flex flex-1 flex-col p-6">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-widest"
+                          style={{ background: accent.light, color: accent.bg }}>
+                          {subject.section_name ?? 'N/A'}
+                        </span>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--muted-foreground)' }}>
+                          {subject.term_label ?? '—'}
+                        </span>
+                      </div>
+                      <h2 className="mb-1 text-lg font-bold leading-snug" style={{ color: 'var(--foreground)' }}>{subject.subject_name}</h2>
+                      <div className="mb-4 flex-1 space-y-1.5">
+                        {subject.schedule_days ? (
+                          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                            <CalendarDays className="h-3.5 w-3.5 shrink-0" style={{ color: accent.bg }} />
+                            {subject.schedule_days}
+                          </div>
+                        ) : null}
+                        {subject.schedule_time ? (
+                          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                            <Clock className="h-3.5 w-3.5 shrink-0" style={{ color: accent.bg }} />
+                            {subject.schedule_time}
+                          </div>
+                        ) : null}
+                        {!subject.schedule_days && !subject.schedule_time ? (
+                          <div className="text-xs italic" style={{ color: 'var(--muted-foreground)' }}>No schedule set</div>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full" style={{ background: accent.light }}>
+                            <User className="h-3.5 w-3.5" style={{ color: accent.bg }} />
+                          </div>
+                          <span className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>
+                            {subject.teacher_name ?? 'TBA'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: accent.bg }}>
+                          Open <ChevronRight className="h-3.5 w-3.5" />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Divider ── */}
+        <div className="relative flex items-center gap-4">
+          <div className="flex-1 border-t-2 border-dashed" style={{ borderColor: 'var(--border)' }} />
+          <span className="rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-widest"
+            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
+            Overview
+          </span>
+          <div className="flex-1 border-t-2 border-dashed" style={{ borderColor: 'var(--border)' }} />
+        </div>
+
+        {/* ── Bottom 3 cards ── */}
+        <div className="grid gap-6 lg:grid-cols-3">
+
+          {/* Learning Materials */}
+          <Card className="border-2" style={{ borderColor: '#0891b2' }}>
             <CardHeader>
-              <CardTitle>Active subjects</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" style={{ color: '#0891b2' }} />
+                Learning Materials
+              </CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4">
-              {subjects.map((subject) => (
-                <div key={subject.id} className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
-                  <div className="text-sm font-semibold text-neutral-900">{subject.name}</div>
-                  <div className="mt-1 text-xs text-neutral-500">{subject.code} · {subject.units} units</div>
-                  <div className="mt-2 text-xs text-neutral-500">{subject.description}</div>
-                </div>
+            <CardContent className="space-y-2">
+              {favorites.length > 0 && (
+                <>
+                  <div className="flex items-center gap-1.5 pb-1 text-[11px] font-bold uppercase tracking-widest" style={{ color: '#dc2626' }}>
+                    <Heart className="h-3 w-3" style={{ fill: '#dc2626', color: '#dc2626' }} />
+                    Favorites
+                  </div>
+                  {favorites.slice(0, 3).map((lesson) => (
+                    <Link key={lesson.id} href={`/dashboard/student/lessons/${lesson.id}`}
+                      className="flex items-center justify-between rounded-xl p-3 transition hover:bg-[var(--surface-2)]"
+                      style={{ border: '1px solid #fca5a5', background: 'rgba(220,38,38,0.03)' }}>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{lesson.title}</div>
+                        <div className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>{lesson.content_type}</div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 shrink-0 ml-2" style={{ color: 'var(--muted-foreground)' }} />
+                    </Link>
+                  ))}
+                  <div className="border-t pt-2" style={{ borderColor: 'var(--border)' }} />
+                  <div className="pb-1 text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted-foreground)' }}>Recent</div>
+                </>
+              )}
+              {previewLessons.length === 0 ? (
+                <div className="rounded-xl border border-dashed p-4 text-xs text-center" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>No materials yet.</div>
+              ) : previewLessons.map((lesson) => (
+                <Link key={lesson.id} href={`/dashboard/student/lessons/${lesson.id}`}
+                  className="flex items-center justify-between rounded-xl p-3 transition hover:bg-[var(--surface-2)]"
+                  style={{ border: '1px solid var(--border)' }}>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{lesson.title}</div>
+                    <div className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--muted-foreground)' }}>{lesson.content_type}</div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 ml-2" style={{ color: 'var(--muted-foreground)' }} />
+                </Link>
               ))}
+              <Link href="/dashboard/student/lessons" className="flex items-center justify-center gap-1 rounded-xl border p-2.5 text-xs font-semibold transition hover:bg-[var(--surface-2)]"
+                style={{ borderColor: 'var(--border)', color: '#0891b2' }}>
+                View all materials <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
             </CardContent>
           </Card>
 
-          <Card id="progress">
+          {/* Assignments Due */}
+          <Card className="border-2" style={{ borderColor: '#d97706' }}>
             <CardHeader>
-              <CardTitle>Progress snapshot</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" style={{ color: '#d97706' }} />
+                Assignments Due
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
-                  <div className="text-xs text-neutral-500">Completion rate</div>
-                  <div className="text-2xl font-semibold text-neutral-900">{progress?.completionRate ?? 0}%</div>
-                </div>
-                <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
-                  <div className="text-xs text-neutral-500">On‑time submissions</div>
-                  <div className="text-2xl font-semibold text-neutral-900">{progress?.onTimeSubmissions ?? 0}%</div>
-                </div>
-                <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
-                  <div className="text-xs text-neutral-500">Attendance rate</div>
-                  <div className="text-2xl font-semibold text-neutral-900">{progress?.attendanceRate ?? 0}%</div>
-                </div>
-                <div className="rounded-xl border border-[rgba(17,17,17,0.12)] bg-[var(--surface-2)] p-4">
-                  <div className="text-xs text-neutral-500">Weekly streak</div>
-                  <div className="text-2xl font-semibold text-neutral-900">{progress?.streakWeeks ?? 0} weeks</div>
-                </div>
-              </div>
-              <div className="grid gap-3">
-                {progress?.goals?.map((goal) => (
-                  <div key={goal.label} className="rounded-lg border border-[rgba(17,17,17,0.12)] p-3">
-                    <div className="text-xs text-neutral-500">{goal.label}</div>
-                    <div className="text-sm font-semibold text-neutral-900">
-                      {goal.value} / {goal.target}
+            <CardContent className="space-y-2">
+              {pendingAssignments.length === 0 ? (
+                <div className="rounded-xl border border-dashed p-4 text-xs text-center" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>No pending assignments.</div>
+              ) : pendingAssignments.map((assignment) => (
+                <Link key={assignment.id} href={`/dashboard/student/assignments/${assignment.id}`}
+                  className="flex items-center justify-between rounded-xl p-3 transition hover:bg-[var(--surface-2)]"
+                  style={{ border: '1px solid var(--border)' }}>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{assignment.title}</div>
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
+                      <Clock className="h-3 w-3" />
+                      {assignment.due_date ? new Date(assignment.due_date).toLocaleDateString() : 'TBA'}
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section id="lessons" className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Latest lessons</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {lessons.map((lesson) => (
-                <div key={lesson.id} className="rounded-xl border border-[rgba(17,17,17,0.12)] p-4">
-                  <div className="text-sm font-semibold text-neutral-900">{lesson.title}</div>
-                  <div className="mt-1 text-xs text-neutral-500">Type: {lesson.content_type.toUpperCase()}</div>
-                </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 ml-2" style={{ color: 'var(--muted-foreground)' }} />
+                </Link>
               ))}
+              <Link href="/dashboard/student/assignments" className="flex items-center justify-center gap-1 rounded-xl border p-2.5 text-xs font-semibold transition hover:bg-[var(--surface-2)]"
+                style={{ borderColor: 'var(--border)', color: '#d97706' }}>
+                View all assignments <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
             </CardContent>
           </Card>
 
-          <Card id="assignments">
+          {/* Upcoming Quizzes */}
+          <Card className="border-2" style={{ borderColor: '#7c3aed' }}>
             <CardHeader>
-              <CardTitle>Assignments due</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4" style={{ color: '#7c3aed' }} />
+                Upcoming Quizzes
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {assignments.map((assignment) => (
-                <div key={assignment.id} className="rounded-xl border border-[rgba(17,17,17,0.12)] p-4">
-                  <div className="text-sm font-semibold text-neutral-900">{assignment.title}</div>
-                  <div className="mt-1 text-xs text-neutral-500">Due {new Date(assignment.due_date).toDateString()}</div>
-                  <div className="mt-1 text-xs text-neutral-500">Total points: {assignment.total_points}</div>
-                </div>
+            <CardContent className="space-y-2">
+              {pendingQuizzes.length === 0 ? (
+                <div className="rounded-xl border border-dashed p-4 text-xs text-center" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>No upcoming quizzes.</div>
+              ) : pendingQuizzes.map((quiz) => (
+                <Link key={quiz.id} href={`/dashboard/student/quizzes/${quiz.id}`}
+                  className="flex items-center justify-between rounded-xl p-3 transition hover:bg-[var(--surface-2)]"
+                  style={{ border: '1px solid var(--border)' }}>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{quiz.title}</div>
+                    <div className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--muted-foreground)' }}>
+                      <Clock className="h-3 w-3" />
+                      {quiz.due_date ? new Date(quiz.due_date).toLocaleDateString() : 'TBA'}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 ml-2" style={{ color: 'var(--muted-foreground)' }} />
+                </Link>
               ))}
-            </CardContent>
-          </Card>
-        </section>
-
-        <section id="quizzes" className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming quizzes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {quizzes.map((quiz) => (
-                <div key={quiz.id} className="rounded-xl border border-[rgba(17,17,17,0.12)] p-4">
-                  <div className="text-sm font-semibold text-neutral-900">{quiz.title}</div>
-                  <div className="mt-1 text-xs text-neutral-500">Attempts: {quiz.attempt_limit}</div>
-                  <div className="mt-1 text-xs text-neutral-500">Due {quiz.due_date ? new Date(quiz.due_date).toDateString() : 'TBA'}</div>
-                </div>
-              ))}
+              <Link href="/dashboard/student/quizzes" className="flex items-center justify-center gap-1 rounded-xl border p-2.5 text-xs font-semibold transition hover:bg-[var(--surface-2)]"
+                style={{ borderColor: 'var(--border)', color: '#7c3aed' }}>
+                View all quizzes <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
             </CardContent>
           </Card>
 
-          <Card id="records">
-            <CardHeader>
-              <CardTitle>Recent records</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Score</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>{record.type}</TableCell>
-                      <TableCell>{record.title}</TableCell>
-                      <TableCell>{record.score ?? 'Pending'}</TableCell>
-                    </TableRow>
-                  ))}
-                  {recentRecords.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center text-sm text-neutral-500">
-                        No graded records yet.
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </section>
+        </div>
       </div>
     </AppShell>
   );

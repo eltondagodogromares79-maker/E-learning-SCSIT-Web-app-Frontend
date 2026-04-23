@@ -16,16 +16,16 @@ export function PageHeader({ title, description, actions, className }: PageHeade
         className
       )}
       style={{
-        background: 'linear-gradient(135deg, rgba(47,111,246,0.08) 0%, rgba(255,255,255,0.96) 60%)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-card)',
+        background: 'var(--page-header-bg, var(--surface))',
+        border: '1px solid var(--page-header-border, var(--border))',
+        boxShadow: 'var(--page-header-shadow, var(--shadow-card))',
       }}
     >
       <div className="space-y-1">
         <h2 className="text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>
           {title}
         </h2>
-        {description ? <p className="text-sm" style={{ color: 'rgba(15,23,42,0.6)' }}>{description}</p> : null}
+        {description ? <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>{description}</p> : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>

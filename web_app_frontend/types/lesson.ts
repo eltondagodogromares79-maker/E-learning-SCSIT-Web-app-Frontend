@@ -12,4 +12,5 @@ export interface Lesson {
   content_type: LessonContentType;
   file_url?: string;
   created_at: string;
+  is_favorited?: boolean;
 }

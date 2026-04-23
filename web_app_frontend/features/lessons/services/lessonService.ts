@@ -15,6 +15,7 @@ interface ApiLesson {
   description?: string | null;
   type: 'pdf' | 'text' | 'link' | 'video';
   file_url?: string | null;
+  is_favorited?: boolean;
   created_at: string;
 }
 
@@ -37,6 +38,7 @@ function mapLesson(lesson: ApiLesson): Lesson {
     description: lesson.description ?? undefined,
     content_type: lesson.type,
     file_url: lesson.file_url ?? undefined,
+    is_favorited: lesson.is_favorited ?? false,
     created_at: lesson.created_at,
   };
 }
@@ -133,5 +135,13 @@ export const lessonService = {
   },
   async remove(id: string): Promise<void> {
     await api.delete(`/api/learning-materials/${id}/`);
+  },
+  async toggleFavorite(id: string): Promise<{ is_favorited: boolean }> {
+    const { data } = await api.post<{ is_favorited: boolean }>(`/api/learning-materials/${id}/toggle-favorite/`);
+    return data;
+  },
+  async listFavorites(): Promise<Lesson[]> {
+    const { data } = await api.get<ApiList<ApiLesson>>('/api/learning-materials/favorites/');
+    return unwrapList(data).map(mapLesson);
   },
 };

@@ -1,223 +1,211 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useStudentPerformance } from '@/features/dashboard/hooks/useStudentPerformance';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import Link from 'next/link';
+import { Search, Users, ShieldAlert, BookOpen, ChevronRight, School, AlertTriangle } from 'lucide-react';
 
 export default function AdviserDashboardPage() {
   const { data, isLoading } = useStudentPerformance();
   const { user } = useAuth();
   const isAdviser = user?.role === 'adviser';
   const sections = data?.mode === 'adviser' ? data.sections : [];
+
   const [query, setQuery] = useState('');
   const [sectionFilter, setSectionFilter] = useState('all');
   const [riskOnly, setRiskOnly] = useState(false);
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
 
-  const filteredSections = useMemo(() => {
-    if (sectionFilter === 'all') return sections;
-    return sections.filter((section) => section.section_id === sectionFilter);
-  }, [sections, sectionFilter]);
+  const filteredSections = useMemo(() =>
+    sectionFilter === 'all' ? sections : sections.filter((s) => s.section_id === sectionFilter),
+    [sections, sectionFilter]
+  );
 
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredStudents = useMemo(() => {
-    if (!normalizedQuery) return filteredSections;
-    return filteredSections
-      .map((section) => ({
-        ...section,
-        students: section.students.filter((student) =>
-          [student.student_name, student.student_number].filter(Boolean).join(' ').toLowerCase().includes(normalizedQuery)
-        ),
-      }))
-      .filter((section) => section.students.length > 0);
-  }, [filteredSections, normalizedQuery]);
+  const q = query.trim().toLowerCase();
+  const withQuery = useMemo(() =>
+    !q ? filteredSections : filteredSections
+      .map((s) => ({ ...s, students: s.students.filter((st) => [st.student_name, st.student_number].filter(Boolean).join(' ').toLowerCase().includes(q)) }))
+      .filter((s) => s.students.length > 0),
+    [filteredSections, q]
+  );
 
-  const riskFilteredSections = useMemo(() => {
-    let result = filteredStudents;
-    if (genderFilter !== 'all') {
-      result = result
-        .map((section) => ({
-          ...section,
-          students: section.students.filter((student) => student.gender === genderFilter),
-        }))
-        .filter((section) => section.students.length > 0);
-    }
-    if (!riskOnly) return result;
-    return result
-      .map((section) => ({
-        ...section,
-        students: section.students.filter((student) => {
-          const missing =
-            student.subjects?.reduce(
-              (sum, subject) => sum + (subject.missing_assignments ?? 0) + (subject.missing_quizzes ?? 0),
-              0
-            ) ?? 0;
-          const violations = student.subjects?.reduce((sum, subject) => sum + (subject.violations ?? 0), 0) ?? 0;
-          return missing > 0 || violations > 0;
-        }),
-      }))
-      .filter((section) => section.students.length > 0);
-  }, [filteredStudents, riskOnly, genderFilter]);
-
-  const sortedSections = useMemo(() => {
-    return riskFilteredSections.map((section) => ({
-      ...section,
-      students: section.students.slice().sort((a, b) => a.student_name.localeCompare(b.student_name)),
-    }));
-  }, [riskFilteredSections]);
+  const sorted = useMemo(() => {
+    let result = withQuery;
+    if (genderFilter !== 'all') result = result.map((s) => ({ ...s, students: s.students.filter((st) => st.gender === genderFilter) })).filter((s) => s.students.length > 0);
+    if (riskOnly) result = result.map((s) => ({
+      ...s,
+      students: s.students.filter((st) => {
+        const missing = st.subjects?.reduce((sum, sub) => sum + (sub.missing_assignments ?? 0) + (sub.missing_quizzes ?? 0), 0) ?? 0;
+        const violations = st.subjects?.reduce((sum, sub) => sum + (sub.violations ?? 0), 0) ?? 0;
+        return missing > 0 || violations > 0;
+      }),
+    })).filter((s) => s.students.length > 0);
+    return result.map((s) => ({ ...s, students: s.students.slice().sort((a, b) => a.student_name.localeCompare(b.student_name)) }));
+  }, [withQuery, riskOnly, genderFilter]);
 
   const summary = useMemo(() => {
-    const allStudents = sections.flatMap((section) => section.students);
-    const totalStudents = allStudents.length;
-    const totalViolations = allStudents.reduce((sum, student) => {
-      const subjectViolations = student.subjects?.reduce((inner, subject) => inner + (subject.violations ?? 0), 0) ?? 0;
-      return sum + subjectViolations;
-    }, 0);
-    return { totalStudents, totalViolations };
+    const all = sections.flatMap((s) => s.students);
+    return {
+      totalStudents: all.length,
+      totalViolations: all.reduce((sum, st) => sum + (st.subjects?.reduce((s2, sub) => s2 + (sub.violations ?? 0), 0) ?? 0), 0),
+      atRisk: all.filter((st) => {
+        const missing = st.subjects?.reduce((s2, sub) => s2 + (sub.missing_assignments ?? 0) + (sub.missing_quizzes ?? 0), 0) ?? 0;
+        const v = st.subjects?.reduce((s2, sub) => s2 + (sub.violations ?? 0), 0) ?? 0;
+        return missing > 0 || v > 0;
+      }).length,
+    };
   }, [sections]);
 
   return (
     <AppShell title="Teacher Dashboard" subtitle="Adviser" navItems={teacherNav} requiredRole="teacher">
-      <div className="space-y-6">
-        <PageHeader
-          title="My section"
-          description="Monitor your advised sections, student performance, and subject-level progress."
-        />
+      <div className="space-y-8 p-6 lg:p-8">
+
+        {/* ── Hero ── */}
+        <div className="relative overflow-hidden rounded-3xl p-8 lg:p-10" style={{ background: 'var(--brand-blue)' }}>
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white opacity-10" />
+          <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white opacity-5" />
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <School className="h-5 w-5 text-white/70" />
+                <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Adviser</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white lg:text-4xl">My Section</h1>
+              <p className="mt-2 text-sm text-white/70">Monitor student performance and at-risk flags.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { label: 'Sections',   value: sections.length,          icon: <School className="h-4 w-4" /> },
+                { label: 'Students',   value: summary.totalStudents,     icon: <Users className="h-4 w-4" /> },
+                { label: 'At Risk',    value: summary.atRisk,            icon: <AlertTriangle className="h-4 w-4" /> },
+                { label: 'Violations', value: summary.totalViolations,   icon: <ShieldAlert className="h-4 w-4" /> },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 backdrop-blur-sm">
+                  <span className="text-white/60">{s.icon}</span>
+                  <div>
+                    <div className="text-lg font-bold leading-none text-white">{s.value}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-white/50">{s.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {!isAdviser ? (
-          <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">
-            You are not assigned as an adviser yet.
+          <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
+            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
+            <School className="h-8 w-8 opacity-30" />
+            <p className="text-sm">You are not assigned as an adviser yet.</p>
           </div>
         ) : (
           <>
-            <Card className="border border-[rgba(30,79,214,0.12)] bg-gradient-to-br from-white via-white to-blue-50/60">
-              <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <CardTitle>Overview</CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  <select
-                    className="h-10 rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
-                    value={sectionFilter}
-                    onChange={(event) => setSectionFilter(event.target.value)}
-                  >
-                    <option value="all">All adviser sections</option>
-                    {sections.map((section) => (
-                      <option key={section.section_id} value={section.section_id}>
-                        {section.section_name}
-                      </option>
-                    ))}
-                  </select>
-                  <Input
-                    placeholder="Search student"
-                    className="md:w-64"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                  <select
-                    className="h-10 rounded-lg border border-[rgba(17,17,17,0.12)] bg-white px-3 text-sm text-neutral-700"
-                    value={genderFilter}
-                    onChange={(event) => setGenderFilter(event.target.value as 'all' | 'male' | 'female')}
-                  >
-                    <option value="all">All genders</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setRiskOnly((prev) => !prev)}
-                    className={`inline-flex items-center rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                      riskOnly
-                        ? 'border-rose-200 bg-rose-50 text-rose-700'
-                        : 'border-[rgba(15,23,42,0.12)] text-neutral-600 hover:bg-[rgba(15,23,42,0.05)]'
-                    }`}
-                  >
-                    {riskOnly ? 'At-risk only' : 'Show at-risk only'}
-                  </button>
-                </div>
-              </CardHeader>
-              <CardContent className="grid gap-3 sm:grid-cols-3">
-                {[
-                  { label: 'Sections', value: sections.length, accent: 'text-slate-700' },
-                  { label: 'Students', value: summary.totalStudents, accent: 'text-slate-700' },
-                  { label: 'Violations', value: summary.totalViolations, accent: 'text-rose-700' },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-2xl border border-neutral-200/70 bg-white/90 p-3 shadow-[0_10px_26px_-22px_rgba(15,23,42,0.45)]"
-                  >
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-400">{item.label}</div>
-                    <div className={`mt-1 text-2xl font-semibold ${item.accent}`}>{item.value}</div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {isLoading ? (
-              <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">
-                Loading adviser records…
+            {/* ── Filters ── */}
+            <div className="flex flex-wrap gap-3">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--muted-foreground)' }} />
+                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search student…"
+                  className="w-full rounded-xl border py-2.5 pl-9 pr-4 text-sm outline-none"
+                  style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--foreground)' }} />
               </div>
-            ) : sortedSections.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">
-                No students found.
+              <select value={sectionFilter} onChange={(e) => setSectionFilter(e.target.value)}
+                className="h-10 rounded-xl border px-3 text-sm outline-none"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--foreground)' }}>
+                <option value="all">All sections</option>
+                {sections.map((s) => <option key={s.section_id} value={s.section_id}>{s.section_name}</option>)}
+              </select>
+              <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value as any)}
+                className="h-10 rounded-xl border px-3 text-sm outline-none"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--foreground)' }}>
+                <option value="all">All genders</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+              <button onClick={() => setRiskOnly((p) => !p)}
+                className="rounded-xl border px-4 py-2 text-sm font-semibold transition-all"
+                style={riskOnly
+                  ? { background: '#fee2e2', color: '#dc2626', borderColor: '#fca5a5' }
+                  : { background: 'var(--surface)', color: 'var(--muted-foreground)', borderColor: 'var(--border)' }}>
+                {riskOnly ? '⚠ At-risk only' : 'Show at-risk only'}
+              </button>
+            </div>
+
+            {/* ── Student cards ── */}
+            {isLoading ? (
+              <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
+                <School className="h-8 w-8 opacity-30 animate-pulse" />
+                <p className="text-sm">Loading adviser records…</p>
+              </div>
+            ) : sorted.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
+                <Users className="h-8 w-8 opacity-30" />
+                <p className="text-sm">No students found.</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {sortedSections.map((section) => (
-                  <Card key={section.section_id} className="border border-[rgba(17,17,17,0.12)] bg-white/90">
-                    <CardHeader>
-                      <CardTitle>{section.section_name}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {section.students.map((student, index) => (
-                        <div
-                          key={student.student_id}
-                          className={`rounded-2xl border border-neutral-200/70 p-4 shadow-[0_12px_30px_-28px_rgba(15,23,42,0.45)] ${
-                            index % 2 === 0 ? 'bg-white/95' : 'bg-blue-50/40'
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-neutral-900">{student.student_name}</div>
-                              <div className="text-xs text-neutral-500">
-                                {student.student_number ? `ID ${student.student_number}` : 'Student record'}
+              <div className="space-y-8">
+                {sorted.map((section) => (
+                  <div key={section.section_id}>
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="h-px flex-1" style={{ background: 'var(--border)' }} />
+                      <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--muted-foreground)' }}>{section.section_name}</span>
+                      <div className="h-px flex-1" style={{ background: 'var(--border)' }} />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {section.students.map((student) => {
+                        const missing = student.subjects?.reduce((sum, sub) => sum + (sub.missing_assignments ?? 0) + (sub.missing_quizzes ?? 0), 0) ?? 0;
+                        const violations = student.subjects?.reduce((sum, sub) => sum + (sub.violations ?? 0), 0) ?? 0;
+                        const isAtRisk = missing > 0 || violations > 0;
+                        return (
+                          <motion.div key={student.student_id} whileHover={{ y: -4 }} transition={{ duration: 0.18 }}>
+                            <div className="flex flex-col overflow-hidden rounded-2xl border"
+                              style={{ borderColor: isAtRisk ? '#fca5a5' : 'var(--border)', background: 'var(--surface)', boxShadow: 'var(--shadow-card)' }}>
+                              <div className="h-1.5 w-full" style={{ background: isAtRisk ? '#dc2626' : '#0891b2' }} />
+                              <div className="flex flex-1 flex-col p-5">
+                                <div className="mb-3 flex items-start justify-between gap-2">
+                                  <div>
+                                    <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{student.student_name}</p>
+                                    <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>{student.student_number ? `ID ${student.student_number}` : 'Student'}</p>
+                                  </div>
+                                  {isAtRisk && (
+                                    <span className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold" style={{ background: '#fee2e2', color: '#dc2626' }}>
+                                      <AlertTriangle className="h-3 w-3" /> At Risk
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="mb-4 flex flex-wrap gap-2">
+                                  <span className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+                                    style={{ background: 'var(--surface-2)', color: 'var(--muted-foreground)' }}>
+                                    <BookOpen className="h-3 w-3" /> {student.subjects?.length ?? 0} subjects
+                                  </span>
+                                  {missing > 0 && (
+                                    <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ background: '#fef3c7', color: '#d97706' }}>
+                                      {missing} missing
+                                    </span>
+                                  )}
+                                  {violations > 0 && (
+                                    <span className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ background: '#fee2e2', color: '#dc2626' }}>
+                                      <ShieldAlert className="h-3 w-3" /> {violations} violation{violations !== 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </div>
+                                <Link href={`/dashboard/teacher/adviser/students/${student.student_id}`}
+                                  className="mt-auto flex items-center justify-between rounded-xl px-4 py-2.5 text-sm font-semibold transition hover:opacity-80"
+                                  style={{ background: 'var(--brand-blue)', color: '#fff' }}>
+                                  View Record <ChevronRight className="h-4 w-4" />
+                                </Link>
                               </div>
                             </div>
-                            <div className="text-right text-xs text-neutral-600">
-                              <Badge variant="outline">
-                                Missing{' '}
-                                {student.subjects?.reduce(
-                                  (sum, subject) => sum + (subject.missing_assignments ?? 0) + (subject.missing_quizzes ?? 0),
-                                  0
-                                ) ?? 0}
-                              </Badge>
-                              <Badge className="mt-2 border border-rose-200 bg-rose-50 text-rose-700">
-                                Violations {student.subjects?.reduce((sum, subject) => sum + (subject.violations ?? 0), 0) ?? 0}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <Badge variant="outline">Subjects {student.subjects?.length ?? 0}</Badge>
-                            <Badge variant="outline">
-                              Violations {student.subjects?.reduce((sum, subject) => sum + (subject.violations ?? 0), 0) ?? 0}
-                            </Badge>
-                            <Link
-                              href={`/dashboard/teacher/adviser/students/${student.student_id}`}
-                              className="inline-flex items-center rounded-full border border-[rgba(15,23,42,0.12)] px-3 py-1 text-[11px] font-semibold text-[var(--brand-blue-deep)] hover:bg-[rgba(15,23,42,0.05)]"
-                            >
-                              View student record
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

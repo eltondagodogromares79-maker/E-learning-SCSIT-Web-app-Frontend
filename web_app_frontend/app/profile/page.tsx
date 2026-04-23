@@ -23,12 +23,12 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string>('');
 
   const profileSchema = z.object({
-    first_name: z.string().min(1, 'First name is required'),
-    last_name: z.string().min(1, 'Last name is required'),
-    middle_name: z.string().optional(),
+    email: z.string().email('Invalid email').optional(),
     phone_number: z.string().optional(),
     address: z.string().optional(),
-    date_of_birth: z.string().optional(),
+    emergency_contact_name: z.string().optional(),
+    emergency_contact_phone: z.string().optional(),
+    emergency_contact_relationship: z.string().optional(),
   });
 
   type ProfileFormData = z.infer<typeof profileSchema>;
@@ -36,24 +36,24 @@ export default function ProfilePage() {
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      first_name: user?.first_name ?? '',
-      last_name: user?.last_name ?? '',
-      middle_name: user?.middle_name ?? '',
+      email: user?.email ?? '',
       phone_number: user?.phone_number ?? '',
       address: user?.address ?? '',
-      date_of_birth: user?.date_of_birth ?? '',
+      emergency_contact_name: user?.student?.emergency_contact_name ?? '',
+      emergency_contact_phone: user?.student?.emergency_contact_phone ?? '',
+      emergency_contact_relationship: user?.student?.emergency_contact_relationship ?? '',
     },
   });
 
   useEffect(() => {
     if (!user) return;
     reset({
-      first_name: user.first_name ?? '',
-      last_name: user.last_name ?? '',
-      middle_name: user.middle_name ?? '',
+      email: user.email ?? '',
       phone_number: user.phone_number ?? '',
       address: user.address ?? '',
-      date_of_birth: user.date_of_birth ?? '',
+      emergency_contact_name: user.student?.emergency_contact_name ?? '',
+      emergency_contact_phone: user.student?.emergency_contact_phone ?? '',
+      emergency_contact_relationship: user.student?.emergency_contact_relationship ?? '',
     });
     setAvatarPreview(user.profile_picture ?? '');
   }, [reset, user]);
@@ -61,39 +61,35 @@ export default function ProfilePage() {
   const onSubmit = async (data: ProfileFormData) => {
     clearError();
     try {
-      const payload: Partial<ProfileFormData> = {};
-      (Object.keys(data) as Array<keyof ProfileFormData>).forEach((key) => {
-        const currentValue = data[key] ?? '';
-        const originalValue = (user?.[key] ?? '') as string;
-        if (currentValue !== originalValue) {
-          payload[key] = data[key];
-        }
+      const payload: Record<string, string | undefined> = {};
+      (['email', 'phone_number', 'address'] as const).forEach((key) => {
+        if ((data[key] ?? '') !== (user?.[key] ?? '')) payload[key] = data[key];
+      });
+      const ecFields = ['emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship'] as const;
+      ecFields.forEach((key) => {
+        const current = data[key] ?? '';
+        const original = user?.student?.[key] ?? '';
+        if (current !== original) payload[key] = data[key];
       });
 
-      if (Object.keys(payload).length === 0 && !avatarFile) {
-        return;
-      }
+      if (Object.keys(payload).length === 0 && !avatarFile) return;
 
       let updated;
       if (avatarFile) {
         const formData = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            formData.append(key, value as string);
-          }
-        });
+        Object.entries(payload).forEach(([k, v]) => { if (v !== undefined) formData.append(k, v); });
         formData.append('profile_picture', avatarFile);
         updated = await updateProfile(formData);
       } else {
         updated = await updateProfile(payload);
       }
       reset({
-        first_name: updated.first_name ?? '',
-        last_name: updated.last_name ?? '',
-        middle_name: updated.middle_name ?? '',
+        email: updated.email ?? '',
         phone_number: updated.phone_number ?? '',
         address: updated.address ?? '',
-        date_of_birth: updated.date_of_birth ?? '',
+        emergency_contact_name: (updated as any).emergency_contact_name ?? '',
+        emergency_contact_phone: (updated as any).emergency_contact_phone ?? '',
+        emergency_contact_relationship: (updated as any).emergency_contact_relationship ?? '',
       });
       setAvatarFile(null);
       setAvatarPreview(updated.profile_picture ?? '');
@@ -150,25 +146,24 @@ export default function ProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <Label>First name</Label>
-                    <Input {...register('first_name')} />
-                    {errors.first_name ? <p className="text-xs text-neutral-500">{errors.first_name.message}</p> : null}
+                    <Input value={user?.first_name ?? ''} readOnly style={{ background: 'var(--surface-2)', color: 'var(--muted-foreground)' }} />
                   </div>
                   <div className="space-y-2">
                     <Label>Last name</Label>
-                    <Input {...register('last_name')} />
-                    {errors.last_name ? <p className="text-xs text-neutral-500">{errors.last_name.message}</p> : null}
+                    <Input value={user?.last_name ?? ''} readOnly style={{ background: 'var(--surface-2)', color: 'var(--muted-foreground)' }} />
                   </div>
                   <div className="space-y-2">
                     <Label>Middle name</Label>
-                    <Input {...register('middle_name')} />
+                    <Input value={user?.middle_name ?? ''} readOnly style={{ background: 'var(--surface-2)', color: 'var(--muted-foreground)' }} />
                   </div>
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <Input value={user?.email ?? ''} readOnly />
+                    <Input {...register('email')} />
+                    {errors.email ? <p className="text-xs text-neutral-500">{errors.email.message}</p> : null}
                   </div>
                   <div className="space-y-2">
                     <Label>Role</Label>
-                    <Input value={user?.role ?? ''} readOnly />
+                    <Input value={user?.role ?? ''} readOnly style={{ background: 'var(--surface-2)', color: 'var(--muted-foreground)' }} />
                   </div>
                   <div className="space-y-2">
                     <Label>Phone number</Label>
@@ -180,9 +175,35 @@ export default function ProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Date of birth</Label>
-                    <Input type="date" {...register('date_of_birth')} />
+                    <Input type="date" value={user?.date_of_birth ?? ''} readOnly style={{ background: 'var(--surface-2)', color: 'var(--muted-foreground)' }} />
                   </div>
                 </div>
+
+                {/* Emergency Contact — students only */}
+                {user?.role === 'student' && (
+                  <>
+                    <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+                      <p className="mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--brand-blue)' }}>Emergency Contact</p>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Contact Name <span className="text-rose-500">*</span></Label>
+                          <Input {...register('emergency_contact_name')} placeholder="e.g. Juan Dela Cruz" />
+                          {errors.emergency_contact_name && <p className="text-xs text-rose-500">{errors.emergency_contact_name.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Contact Phone <span className="text-rose-500">*</span></Label>
+                          <Input {...register('emergency_contact_phone')} placeholder="e.g. 09XX XXX XXXX" />
+                          {errors.emergency_contact_phone && <p className="text-xs text-rose-500">{errors.emergency_contact_phone.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Relationship <span className="text-rose-500">*</span></Label>
+                          <Input {...register('emergency_contact_relationship')} placeholder="e.g. Parent, Guardian" />
+                          {errors.emergency_contact_relationship && <p className="text-xs text-rose-500">{errors.emergency_contact_relationship.message}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
                 <Button size="sm" variant="secondary" type="submit" disabled={isLoading}>
                   {isLoading ? 'Saving...' : 'Save changes'}
                 </Button>
@@ -255,7 +276,7 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button className="w-full" variant="outline" onClick={() => setOpenPassword(true)}>Change password</Button>
-                <Button className="w-full" variant="outline">Notification settings</Button>
+                {/* <Button className="w-full" variant="outline">Notification settings</Button> */}
               </CardContent>
             </Card>
           </div>

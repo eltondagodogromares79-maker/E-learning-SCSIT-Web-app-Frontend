@@ -1,6 +1,9 @@
 'use client';
 
+import Link from 'next/link';
+import Image from 'next/image';
 import { PublicNav } from '@/components/navigation/PublicNav';
+import { PublicFooter } from '@/components/navigation/PublicFooter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { usePublicTeachers } from '@/features/teachers/hooks/usePublicTeachers';
@@ -17,7 +20,7 @@ function Avatar({ person }: { person: { first_name?: string; last_name?: string;
   return (
     <div
       className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold text-white"
-      style={{ background: 'linear-gradient(135deg, #2f6ff6, #1a3a8f)' }}
+      style={{ background: 'var(--brand-blue)' }}
     >
       {person.profile_picture ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -52,7 +55,7 @@ function Pagination({
           className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors disabled:opacity-30"
           style={{ border: '1px solid var(--border)', background: 'var(--surface-2)' }}
         >
-          <ChevronLeft className="h-3.5 w-3.5" style={{ color: 'rgba(11,26,53,0.6)' }} />
+          <ChevronLeft className="h-3.5 w-3.5" style={{ color: 'var(--muted-foreground)' }} />
         </button>
         <button
           onClick={onNext}
@@ -60,7 +63,7 @@ function Pagination({
           className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors disabled:opacity-30"
           style={{ border: '1px solid var(--border)', background: 'var(--surface-2)' }}
         >
-          <ChevronRight className="h-3.5 w-3.5" style={{ color: 'rgba(11,26,53,0.6)' }} />
+          <ChevronRight className="h-3.5 w-3.5" style={{ color: 'var(--muted-foreground)' }} />
         </button>
       </div>
     </div>
@@ -71,7 +74,7 @@ function EmptyRow({ message }: { message: string }) {
   return (
     <div
       className="rounded-xl p-4 text-center text-xs"
-      style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'rgba(11,26,53,0.45)' }}
+      style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--muted-foreground)' }}
     >
       {message}
     </div>
@@ -111,7 +114,7 @@ export default function DirectoryPage() {
       <section className="relative overflow-hidden">
         <div
           className="pointer-events-none absolute -top-24 left-0 h-[300px] w-[400px] rounded-full opacity-20 blur-3xl"
-          style={{ background: 'radial-gradient(ellipse, rgba(47,111,246,0.35) 0%, transparent 70%)' }}
+          style={{ background: 'rgba(13,18,130,0.2)' }}
         />
         <div className="mx-auto w-full max-w-6xl px-6 py-16">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
@@ -126,20 +129,40 @@ export default function DirectoryPage() {
               <h1 className="text-4xl font-semibold leading-tight" style={{ color: 'var(--foreground)' }}>
                 Teachers, advisers &amp; sections
               </h1>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(11,26,53,0.6)' }}>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
                 Browse the current school roster for quick reference and coordination.
+                SCSIT NEXUS stands for Salazar Colleges of Science and Institute of Technology.
               </p>
             </div>
 
             {/* Search */}
             <div className="relative w-full max-w-xs">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'rgba(11,26,53,0.35)' }} />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--muted-foreground)' }} />
               <Input
                 placeholder="Search staff or sections…"
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10"
               />
+            </div>
+          </div>
+
+          {/* Banner image */}
+          <div className="relative mt-8 overflow-hidden rounded-3xl shadow-lg" style={{ border: '1px solid var(--border)' }}>
+            <Image
+              src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1200&q=80"
+              alt="School staff"
+              width={1200}
+              height={300}
+              className="h-48 w-full object-cover object-center"
+              unoptimized
+            />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(13,18,130,0.6) 0%, rgba(13,18,130,0.2) 100%)' }} />
+            <div className="absolute inset-0 flex items-center px-8">
+              <div>
+                <p className="text-2xl font-bold text-white">Our School Community</p>
+                <p className="mt-1 text-sm text-white/70">Meet the dedicated staff and sections of SCSIT</p>
+              </div>
             </div>
           </div>
         </div>
@@ -309,6 +332,8 @@ export default function DirectoryPage() {
 
         </div>
       </main>
+
+      <PublicFooter />
     </div>
   );
 }

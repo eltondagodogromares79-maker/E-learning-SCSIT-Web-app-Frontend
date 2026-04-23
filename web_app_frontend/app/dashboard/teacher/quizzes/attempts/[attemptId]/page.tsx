@@ -38,6 +38,8 @@ export default function QuizAttemptReviewPage() {
   const [previewScore, setPreviewScore] = useState<number | null>(null);
   const [previewFeedback, setPreviewFeedback] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [photoItems, setPhotoItems] = useState<Array<{ id: string; image_url: string; reason?: string | null; created_at: string }>>([]);
 
   const manualAnswers = useMemo(
     () =>
@@ -90,9 +92,12 @@ export default function QuizAttemptReviewPage() {
           .map((event) => ({ detail: event.detail, created_at: event.created_at }))
           .slice(0, 6);
         setViolationTimeline(timeline);
+        const snapshots = logs.flatMap((log) => log.snapshots ?? []);
+        setPhotoItems(snapshots);
       } catch {
         setViolationCount(null);
         setViolationTimeline([]);
+        setPhotoItems([]);
       }
       setScoreDrafts((prev) => {
         const next = { ...prev };
@@ -207,6 +212,22 @@ export default function QuizAttemptReviewPage() {
               {attempt?.quiz_id ? (
                 <Button variant="outline" as={Link} href={`/dashboard/teacher/quizzes/${attempt.quiz_id}`}>
                   Back to quiz
+                </Button>
+              ) : null}
+              {attempt?.quiz_id ? (
+                <Button onClick={() => setPhotoOpen(true)}>
+                  Show photos
+                </Button>
+              ) : null}
+              {attempt?.quiz_id ? (
+                <Button
+                  variant="secondary"
+                  as={Link}
+                  href={`/dashboard/teacher/quizzes/${attempt.quiz_id}/proctor-logs?student=${encodeURIComponent(
+                    attempt?.student_name ?? attempt?.student_id ?? ''
+                  )}`}
+                >
+                  Show logs
                 </Button>
               ) : null}
               {attempt?.section_subject_id ? (
@@ -527,6 +548,40 @@ export default function QuizAttemptReviewPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={photoOpen} onOpenChange={setPhotoOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Camera snapshots</DialogTitle>
+          </DialogHeader>
+          {loading ? (
+            <div className="text-sm text-neutral-500">Loading photos…</div>
+          ) : photoItems.length === 0 ? (
+            <div className="text-sm text-neutral-500">No photos captured.</div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {photoItems.map((snapshot) => (
+                <a
+                  key={snapshot.id}
+                  href={snapshot.image_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group overflow-hidden rounded-xl border border-[var(--border)] bg-white"
+                >
+                  <img src={snapshot.image_url} alt={snapshot.reason ?? 'snapshot'} className="h-40 w-full object-cover" />
+                  <div className="p-2 text-xs text-neutral-500">
+                    {snapshot.reason ?? 'snapshot'} • {new Date(snapshot.created_at).toLocaleString()}
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 flex justify-end">
+            <Button variant="secondary" onClick={() => setPhotoOpen(false)}>
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </AppShell>

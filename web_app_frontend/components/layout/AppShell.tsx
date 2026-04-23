@@ -9,6 +9,7 @@ import type { NavItem } from '@/components/navigation/nav-config';
 import type { UserRole } from '@/types';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { GlobalSpinner } from '@/components/feedback/GlobalSpinner';
+import { DashboardFooter } from '@/components/layout/DashboardFooter';
 
 interface AppShellProps {
   title: string;
@@ -24,6 +25,7 @@ export default function AppShell({ title, subtitle, navItems, children, required
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout, isInitializing } = useAuth();
+  const isStudent = user?.role === 'student';
   const filteredNavItems = React.useMemo(() => {
     if (!user) return navItems;
     if (user.role !== 'adviser') {
@@ -68,8 +70,22 @@ export default function AppShell({ title, subtitle, navItems, children, required
     router.replace('/login');
   }, [logout, router]);
 
+  const shellBackground = 'var(--page-gradient)';
+
+  const shellStyle: React.CSSProperties = {
+    background: shellBackground,
+    ...(isStudent
+      ? {
+          ['--page-header-bg' as const]: 'var(--surface)',
+          ['--page-header-border' as const]: 'var(--border)',
+          ['--page-header-shadow' as const]: 'var(--shadow-card)',
+          ['--card-bg' as const]: 'var(--surface)',
+        }
+      : {}),
+  };
+
   return (
-    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+    <div className="min-h-screen" style={shellStyle}>
       <GlobalSpinner />
       {minimal ? (
         <main className={cn('px-4 pb-8 pt-6 sm:px-8')}>{children}</main>
@@ -85,7 +101,7 @@ export default function AppShell({ title, subtitle, navItems, children, required
           ) : null}
           <div className="flex">
             <Sidebar isOpen={isOpen} navItems={filteredNavItems} onToggle={() => setIsOpen((prev) => !prev)} />
-            <div className="flex-1 min-w-0">
+            <div className="flex flex-col min-h-screen flex-1 min-w-0">
               <TopNav
                 title={title}
                 subtitle={subtitle}
@@ -102,7 +118,8 @@ export default function AppShell({ title, subtitle, navItems, children, required
                     : undefined
                 }
               />
-              <main className={cn('px-6 pb-10 pt-6 sm:px-8')}>{children}</main>
+              <main className={cn('flex-1 px-6 pb-10 pt-6 sm:px-8')}>{children}</main>
+              <DashboardFooter />
             </div>
           </div>
         </>
