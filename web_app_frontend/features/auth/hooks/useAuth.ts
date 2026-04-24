@@ -1,5 +1,6 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authService, type UpdateProfilePayload, type ChangePasswordPayload } from '@/features/auth/services/authService';
 import { tokenStorage } from '@/lib/tokenStorage';
@@ -9,13 +10,18 @@ import { useToast } from '@/components/ui/toast';
 export function useAuth() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const hasStoredSession = Boolean(tokenStorage.getAccessToken() || tokenStorage.getRefreshToken());
+  const hasHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
+  const hasStoredSession = hasHydrated && Boolean(tokenStorage.getAccessToken() || tokenStorage.getRefreshToken());
 
   const userQuery = useQuery<User>({
     queryKey: ['auth', 'me'],
     queryFn: () => authService.me(),
     retry: 0,
-    enabled: hasStoredSession,
+    enabled: hasHydrated && hasStoredSession,
   });
 
   const loginMutation = useMutation({
@@ -97,7 +103,7 @@ export function useAuth() {
 
   return {
     user: userQuery.data ?? null,
-    isInitializing: hasStoredSession ? userQuery.isLoading : false,
+    isInitializing: hasHydrated && hasStoredSession ? userQuery.isLoading : false,
     error: latestError ? (latestError as Error).message : null,
     clearError: () => undefined,
     login: async (email: string, password: string) => {

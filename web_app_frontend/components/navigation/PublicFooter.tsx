@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { BookOpen, Users, LayoutGrid, Mail, MapPin, Phone, GraduationCap, Shield, Zap } from 'lucide-react';
 
+const COPYRIGHT_YEAR = 2026;
+
 const navLinks = [
   { label: 'Home', href: '/home' },
   { label: 'About', href: '/about' },
@@ -106,7 +108,7 @@ export function PublicFooter() {
         <div className="mt-6 flex flex-col gap-3 text-xs text-white md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-400" />
-            © {new Date().getFullYear()} SCSIT NEXUS — E-Learning Platform. All rights reserved.
+            © {COPYRIGHT_YEAR} SCSIT NEXUS — E-Learning Platform. All rights reserved.
           </div>
           <div className="flex items-center gap-2 rounded-full px-3 py-1.5" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />

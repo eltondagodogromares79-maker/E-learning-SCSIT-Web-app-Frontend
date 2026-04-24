@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { PublicNav } from '@/components/navigation/PublicNav';
 import { PublicFooter } from '@/components/navigation/PublicFooter';
@@ -85,6 +86,7 @@ export default function HomePage() {
                   width={800}
                   height={512}
                   sizes="(min-width: 1024px) 50vw, 100vw"
+                  loading="lazy"
                   className="h-80 w-full object-cover"
                 />
                 <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,18,130,0.5) 0%, transparent 60%)' }} />
@@ -172,4 +174,3 @@ export default function HomePage() {
     </div>
   );
 }
-import Image from 'next/image';

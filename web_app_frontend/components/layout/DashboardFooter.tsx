@@ -1,5 +1,7 @@
 import { BookOpen, Shield, Zap, GraduationCap } from 'lucide-react';
 
+const COPYRIGHT_YEAR = 2026;
+
 export function DashboardFooter() {
   return (
     <footer
@@ -38,7 +40,7 @@ export function DashboardFooter() {
         {/* Copyright */}
         <div className="flex items-center gap-1.5 text-xs text-white/50">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-400" />
-          © {new Date().getFullYear()} SCSIT NEXUS. All rights reserved.
+          © {COPYRIGHT_YEAR} SCSIT NEXUS. All rights reserved.
         </div>
 
       </div>
