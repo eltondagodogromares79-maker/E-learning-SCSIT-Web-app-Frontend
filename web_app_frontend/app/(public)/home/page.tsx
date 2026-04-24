@@ -79,9 +79,12 @@ export default function HomePage() {
             <div className="relative hidden lg:block">
               <div className="absolute -inset-4 rounded-3xl opacity-20 blur-2xl" style={{ background: 'var(--brand-blue)' }} />
               <div className="relative overflow-hidden rounded-3xl shadow-2xl" style={{ border: '1px solid var(--border)' }}>
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=800&q=80"
                   alt="Students learning"
+                  width={800}
+                  height={512}
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="h-80 w-full object-cover"
                 />
                 <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,18,130,0.5) 0%, transparent 60%)' }} />
@@ -119,7 +122,7 @@ export default function HomePage() {
       <section className="mx-auto w-full max-w-6xl px-6 py-20">
         <div className="mb-12 text-center">
           <div className="mb-3 inline-block h-0.5 w-10 rounded-full" style={{ background: 'var(--brand-gold)' }} />
-          <h2 className="text-3xl font-semibold" style={{ color: 'var(--foreground)' }}>Everything you need, nothing you don't</h2>
+          <h2 className="text-3xl font-semibold" style={{ color: 'var(--foreground)' }}>Everything you need, nothing you don&apos;t</h2>
           <p className="mt-3 text-sm" style={{ color: 'var(--muted-foreground)' }}>Built around the real daily needs of schools.</p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
@@ -169,3 +172,4 @@ export default function HomePage() {
     </div>
   );
 }
+import Image from 'next/image';

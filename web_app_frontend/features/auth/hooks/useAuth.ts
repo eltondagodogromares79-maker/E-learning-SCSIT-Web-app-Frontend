@@ -9,11 +9,13 @@ import { useToast } from '@/components/ui/toast';
 export function useAuth() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const hasStoredSession = Boolean(tokenStorage.getAccessToken() || tokenStorage.getRefreshToken());
 
   const userQuery = useQuery<User>({
     queryKey: ['auth', 'me'],
     queryFn: () => authService.me(),
     retry: 0,
+    enabled: hasStoredSession,
   });
 
   const loginMutation = useMutation({
@@ -95,7 +97,7 @@ export function useAuth() {
 
   return {
     user: userQuery.data ?? null,
-    isInitializing: userQuery.isLoading,
+    isInitializing: hasStoredSession ? userQuery.isLoading : false,
     error: latestError ? (latestError as Error).message : null,
     clearError: () => undefined,
     login: async (email: string, password: string) => {

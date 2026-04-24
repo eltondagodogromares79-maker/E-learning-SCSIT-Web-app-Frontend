@@ -180,6 +180,8 @@ export function ChatPanel() {
     return env.CHAT_WS_URL;
   }, []);
 
+  const apiOrigin = useMemo(() => env.API_BASE_URL.replace(/\/api\/?$/, ''), []);
+
   const wsUrl = useMemo(() => {
     if (!wsBaseUrl) return '';
     if (!wsToken) return wsBaseUrl;
@@ -214,16 +216,22 @@ export function ChatPanel() {
 
   const userAvatarMap = useMemo(() => {
     const map = new Map<string, string | null>();
+    const resolveAvatar = (value?: string | null) => {
+      if (!value) return null;
+      if (/^https?:\/\//i.test(value)) return value;
+      if (value.startsWith('/')) return `${apiOrigin}${value}`;
+      return `${apiOrigin}/${value}`;
+    };
     contacts.forEach((contact) => {
-      map.set(contact.id, contact.profile_picture ?? null);
+      map.set(contact.id, resolveAvatar(contact.profile_picture));
     });
     allUsersData.forEach((user) => {
       if (!map.has(user.id)) {
-        map.set(user.id, user.profile_picture ?? null);
+        map.set(user.id, resolveAvatar(user.profile_picture));
       }
     });
     return map;
-  }, [contacts, allUsersData]);
+  }, [allUsersData, apiOrigin, contacts]);
 
   useEffect(() => {
     groupMembersRef.current = groupMemberIds;
@@ -625,8 +633,16 @@ export function ChatPanel() {
     };
 
     return () => {
-      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+      if (socket.readyState === WebSocket.OPEN) {
         socket.close();
+      } else if (socket.readyState === WebSocket.CONNECTING) {
+        socket.addEventListener(
+          'open',
+          () => {
+            socket.close();
+          },
+          { once: true }
+        );
       }
       if (socketRef.current === socket) {
         socketRef.current = null;

@@ -241,8 +241,16 @@ export function useNotifications() {
     };
 
     return () => {
-      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+      if (socket.readyState === WebSocket.OPEN) {
         socket.close();
+      } else if (socket.readyState === WebSocket.CONNECTING) {
+        socket.addEventListener(
+          'open',
+          () => {
+            socket.close();
+          },
+          { once: true }
+        );
       }
       if (socketRef.current === socket) {
         socketRef.current = null;
