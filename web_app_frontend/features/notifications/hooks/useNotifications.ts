@@ -36,7 +36,7 @@ export function useNotifications() {
     [notifications]
   );
 
-  const pushNotification = useCallback(
+  const upsertNotification = useCallback(
     (incoming: Notification) => {
       queryClient.setQueryData(['notifications'], (prev) => {
         if (!prev || typeof prev !== 'object' || !('pages' in prev)) return prev;
@@ -51,13 +51,38 @@ export function useNotifications() {
             pages: [{ results: [incoming], nextPage: data.pages[0]?.nextPage }],
           };
         }
-        if (first.results.some((item) => item.id === incoming.id)) {
-          return data;
-        }
-        const updatedFirst = { ...first, results: [incoming, ...first.results] };
+        const exists = data.pages.some((page) => page.results.some((item) => item.id === incoming.id));
+        const updatedPages = data.pages.map((page) => ({
+          ...page,
+          results: page.results.map((item) => (item.id === incoming.id ? incoming : item)),
+        }));
+        const updatedFirst = exists
+          ? updatedPages[0]
+          : { ...updatedPages[0], results: [incoming, ...updatedPages[0].results] };
         return {
           ...data,
-          pages: [updatedFirst, ...data.pages.slice(1)],
+          pages: [updatedFirst, ...updatedPages.slice(1)],
+        };
+      });
+    },
+    [queryClient]
+  );
+
+  const removeNotifications = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      queryClient.setQueryData(['notifications'], (prev) => {
+        if (!prev || typeof prev !== 'object' || !('pages' in prev)) return prev;
+        const data = prev as {
+          pages: Array<{ results: Notification[]; nextPage?: number | null }>;
+          pageParams: unknown[];
+        };
+        return {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            results: page.results.filter((item) => !ids.includes(item.id)),
+          })),
         };
       });
     },
@@ -183,9 +208,15 @@ export function useNotifications() {
         socket.onerror = () => setConnected(false);
         socket.onmessage = (event) => {
           try {
-            const payload = JSON.parse(event.data) as { type?: string; data?: Notification };
+            const payload = JSON.parse(event.data) as
+              | { type?: 'notification'; data?: Notification }
+              | { type?: 'notification_deleted'; data?: { ids?: string[] } };
             if (payload.type === 'notification' && payload.data) {
-              pushNotification(payload.data);
+              upsertNotification(payload.data);
+            }
+            if (payload.type === 'notification_deleted') {
+              const ids = Array.isArray(payload.data?.ids) ? payload.data.ids : [];
+              removeNotifications(ids);
             }
           } catch {
             // ignore
@@ -198,7 +229,7 @@ export function useNotifications() {
       mounted = false;
       socket?.close();
     };
-  }, [pushNotification]);
+  }, [removeNotifications, upsertNotification]);
 
   return {
     notifications,

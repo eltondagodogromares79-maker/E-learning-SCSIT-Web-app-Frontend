@@ -1621,14 +1621,28 @@ export function ChatPanel() {
                 const replyMessage = msg.reply_to_id ? activeMessageMap.get(msg.reply_to_id) : null;
                 const reactions = msg.reactions ?? {};
                 const isUnsent = msg.content === UNSENT_TOKEN;
+                const bubbleClass = isMine
+                  ? 'bg-[var(--brand-blue-deep)] text-white'
+                  : 'border border-[rgba(15,23,42,0.08)] bg-white text-neutral-700';
+                const iconButtonClass = isMine
+                  ? 'bg-white/14 text-white/85 hover:bg-white/22'
+                  : 'border border-[rgba(15,23,42,0.08)] bg-white/95 text-neutral-500 hover:bg-neutral-50';
+                const chipBaseClass = isMine
+                  ? 'border-white/20 bg-white/10 text-white/90 hover:bg-white/18'
+                  : 'border-[rgba(15,23,42,0.10)] bg-neutral-50 text-neutral-700 hover:bg-neutral-100';
+                const activeReactionClass = isMine
+                  ? 'border-white/40 bg-white/20 text-white'
+                  : 'border-emerald-300 bg-emerald-50 text-emerald-700';
+                const pickerClass = isMine
+                  ? 'border-white/15 bg-white/10'
+                  : 'border-[rgba(15,23,42,0.08)] bg-neutral-50/90';
+                const quickActionClass = isMine
+                  ? 'border-white/20 bg-white/10 text-white/90 hover:bg-white/18'
+                  : 'border-[rgba(15,23,42,0.10)] bg-white text-neutral-700 hover:bg-neutral-50';
                 return (
                   <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
                     <div
-                      className={`group relative max-w-[70%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
-                        isMine
-                          ? 'bg-[var(--brand-blue-deep)] text-white'
-                          : 'bg-white text-neutral-700'
-                      }`}
+                      className={`group relative max-w-[70%] rounded-2xl px-4 py-3 text-sm shadow-sm ${bubbleClass}`}
                       onTouchStart={(event) => {
                         const touch = event.touches[0];
                         setBubbleSwipeStart(touch.clientX);
@@ -1651,11 +1665,7 @@ export function ChatPanel() {
                           setMessageMenuOpenId((prev) => (prev === msg.id ? null : msg.id));
                         }}
                         onPointerDown={(event) => event.stopPropagation()}
-                        className={`absolute right-2 top-2 z-30 rounded-full p-1 shadow-sm ${
-                          isMine
-                            ? 'bg-black/30 text-white/80 hover:bg-black/40'
-                            : 'bg-white/90 text-neutral-500 hover:bg-white'
-                        }`}
+                        className={`absolute right-2 top-2 z-30 rounded-full p-1.5 shadow-sm transition ${iconButtonClass}`}
                         aria-label="Message actions"
                         data-chat-menu
                       >
@@ -1664,7 +1674,7 @@ export function ChatPanel() {
                       ) : null}
                       {messageMenuOpenId === msg.id && !isUnsent ? (
                         <div
-                          className="absolute right-2 top-8 z-20 w-44 rounded-xl border border-[rgba(15,23,42,0.12)] bg-white p-1 text-xs text-neutral-700 shadow-lg"
+                          className="absolute right-2 top-10 z-20 w-48 rounded-2xl border border-[rgba(15,23,42,0.12)] bg-white p-1.5 text-xs text-neutral-700 shadow-xl"
                           onClick={(event) => event.stopPropagation()}
                           onPointerDown={(event) => event.stopPropagation()}
                           data-chat-menu
@@ -1676,7 +1686,7 @@ export function ChatPanel() {
                                 setMessageMenuOpenId(null);
                                 setReactionPickerMessageId((prev) => (prev === msg.id ? null : msg.id));
                               }}
-                              className="w-full rounded-lg px-3 py-2 text-left hover:bg-neutral-100 lg:hidden"
+                              className="w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-neutral-100 lg:hidden"
                             >
                               React
                             </button>
@@ -1686,7 +1696,7 @@ export function ChatPanel() {
                                 setMessageMenuOpenId(null);
                                 setReplyTarget(msg);
                               }}
-                              className="w-full rounded-lg px-3 py-2 text-left hover:bg-neutral-100 lg:hidden"
+                              className="w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-neutral-100 lg:hidden"
                             >
                               Reply
                             </button>
@@ -1698,7 +1708,7 @@ export function ChatPanel() {
                                     setMessageMenuOpenId(null);
                                     handleEditMessage(msg);
                                   }}
-                                  className="w-full rounded-lg px-3 py-2 text-left hover:bg-neutral-100"
+                                  className="w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-neutral-100"
                                 >
                                   Edit message
                                 </button>
@@ -1708,7 +1718,7 @@ export function ChatPanel() {
                                     setMessageMenuOpenId(null);
                                     handleDeleteMessage(msg);
                                   }}
-                                  className="w-full rounded-lg px-3 py-2 text-left text-rose-500 hover:bg-rose-50"
+                                  className="w-full rounded-xl px-3 py-2.5 text-left text-rose-500 transition hover:bg-rose-50"
                                 >
                                   Delete for everyone
                                 </button>
@@ -1720,7 +1730,7 @@ export function ChatPanel() {
                                 setMessageMenuOpenId(null);
                                 handleDeleteForMe(msg);
                               }}
-                              className="w-full rounded-lg px-3 py-2 text-left hover:bg-neutral-100"
+                              className="w-full rounded-xl px-3 py-2.5 text-left transition hover:bg-neutral-100"
                             >
                               Delete for me
                             </button>
@@ -1756,10 +1766,8 @@ export function ChatPanel() {
                               key={emoji}
                               type="button"
                               onClick={() => handleReact(activeRoom, msg.id, emoji)}
-                              className={`rounded-full border px-2 py-1 text-[11px] ${
-                                users.includes(chatContext?.id ?? '')
-                                  ? 'border-emerald-400 text-emerald-600'
-                                  : 'border-transparent bg-white/70'
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                users.includes(chatContext?.id ?? '') ? activeReactionClass : chipBaseClass
                               }`}
                             >
                               {emoji} {users.length}
@@ -1770,14 +1778,14 @@ export function ChatPanel() {
                             onClick={() =>
                               setReactionPickerMessageId((prev) => (prev === msg.id ? null : msg.id))
                             }
-                            className="rounded-full border border-white/40 px-2 py-1 text-[11px]"
+                            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${chipBaseClass}`}
                           >
-                            +
+                            React
                           </button>
                         </div>
                       ) : null}
                       {!isUnsent && reactionPickerMessageId === msg.id ? (
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <div className={`mt-2 flex flex-wrap items-center gap-2 rounded-2xl border p-2 ${pickerClass}`}>
                           {['👍', '❤️', '😂', '😮', '😢'].map((emoji) => (
                             <button
                               key={emoji}
@@ -1786,7 +1794,7 @@ export function ChatPanel() {
                                 handleReact(activeRoom, msg.id, emoji);
                                 setReactionPickerMessageId(null);
                               }}
-                              className="rounded-full border border-white/40 px-2 py-1 text-[11px]"
+                              className={`rounded-full border px-2.5 py-1 text-[11px] transition ${chipBaseClass}`}
                             >
                               {emoji}
                             </button>
@@ -1794,11 +1802,11 @@ export function ChatPanel() {
                         </div>
                       ) : null}
                       {!isUnsent ? (
-                        <div className="mt-2 hidden items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 lg:flex">
+                        <div className="mt-3 hidden flex-wrap items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 lg:flex">
                           <button
                             type="button"
                             onClick={() => setReplyTarget(msg)}
-                            className="rounded-full border border-white/40 px-2 py-1 text-[11px]"
+                            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${quickActionClass}`}
                           >
                             Reply
                           </button>
@@ -1807,21 +1815,21 @@ export function ChatPanel() {
                               <button
                                 type="button"
                                 onClick={() => handleEditMessage(msg)}
-                                className="rounded-full border border-white/40 px-2 py-1 text-[11px]"
+                                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${quickActionClass}`}
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteMessage(msg)}
-                                className="rounded-full border border-white/40 px-2 py-1 text-[11px]"
+                                className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-600 transition hover:bg-rose-100"
                               >
                                 Delete for everyone
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteForMe(msg)}
-                                className="rounded-full border border-white/40 px-2 py-1 text-[11px]"
+                                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${quickActionClass}`}
                               >
                                 Delete for me
                               </button>
@@ -1830,7 +1838,7 @@ export function ChatPanel() {
                             <button
                               type="button"
                               onClick={() => handleDeleteForMe(msg)}
-                              className="rounded-full border border-white/40 px-2 py-1 text-[11px]"
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${quickActionClass}`}
                             >
                               Delete for me
                             </button>
