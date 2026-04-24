@@ -149,6 +149,7 @@ export function ChatPanel() {
   const [wsToken, setWsToken] = useState<string>('');
   const [wsReady, setWsReady] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
+  const roomsRef = useRef<Room[]>([]);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeRoomRef = useRef<string>('');
   const userIdRef = useRef<string | null>(null);
@@ -227,6 +228,10 @@ export function ChatPanel() {
   useEffect(() => {
     groupMembersRef.current = groupMemberIds;
   }, [groupMemberIds]);
+
+  useEffect(() => {
+    roomsRef.current = rooms;
+  }, [rooms]);
 
   useEffect(() => {
     if (!chatContext?.id) return;
@@ -604,7 +609,7 @@ export function ChatPanel() {
     socket.onopen = () => {
       setStatus('connected');
       // join all known rooms so unread badges update in real time
-      rooms.forEach((room) => {
+      roomsRef.current.forEach((room) => {
         socket.send(JSON.stringify({ type: 'join', room: room.id }));
       });
     };
@@ -620,9 +625,14 @@ export function ChatPanel() {
     };
 
     return () => {
-      socket.close();
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
     };
-  }, [handleIncoming, wsReady, wsUrl, rooms]);
+  }, [handleIncoming, wsReady, wsUrl]);
 
   useEffect(() => {
     const socket = socketRef.current;

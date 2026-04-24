@@ -17,6 +17,8 @@ const buildWsUrl = (token: string) => {
 export function useNotifications() {
   const queryClient = useQueryClient();
   const [connected, setConnected] = useState(false);
+  const [wsToken, setWsToken] = useState('');
+  const [wsReady, setWsReady] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
 
   const notificationsQuery = useInfiniteQuery<{ results: Notification[]; nextPage?: number | null }>({
@@ -193,43 +195,60 @@ export function useNotifications() {
   }, [queryClient]);
 
   useEffect(() => {
-    let mounted = true;
-    let socket: WebSocket | null = null;
+    let active = true;
 
     notificationService
       .getWsToken()
       .then((token) => {
-        if (!mounted) return;
-        const wsUrl = buildWsUrl(token);
-        socket = new WebSocket(wsUrl);
-        socketRef.current = socket;
-        socket.onopen = () => setConnected(true);
-        socket.onclose = () => setConnected(false);
-        socket.onerror = () => setConnected(false);
-        socket.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data) as
-              | { type?: 'notification'; data?: Notification }
-              | { type?: 'notification_deleted'; data?: { ids?: string[] } };
-            if (payload.type === 'notification' && payload.data) {
-              upsertNotification(payload.data);
-            }
-            if (payload.type === 'notification_deleted') {
-              const ids = Array.isArray(payload.data?.ids) ? payload.data.ids : [];
-              removeNotifications(ids);
-            }
-          } catch {
-            // ignore
-          }
-        };
+        if (active) setWsToken(token);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (active) setWsToken('');
+      })
+      .finally(() => {
+        if (active) setWsReady(true);
+      });
 
     return () => {
-      mounted = false;
-      socket?.close();
+      active = false;
     };
-  }, [removeNotifications, upsertNotification]);
+  }, []);
+
+  useEffect(() => {
+    if (!wsReady) return;
+    const wsUrl = buildWsUrl(wsToken);
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
+
+    socket.onopen = () => setConnected(true);
+    socket.onclose = () => setConnected(false);
+    socket.onerror = () => setConnected(false);
+    socket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data) as
+          | { type?: 'notification'; data?: Notification }
+          | { type?: 'notification_deleted'; data?: { ids?: string[] } };
+        if (payload.type === 'notification' && payload.data) {
+          upsertNotification(payload.data);
+        }
+        if (payload.type === 'notification_deleted') {
+          const ids = Array.isArray(payload.data?.ids) ? payload.data.ids : [];
+          removeNotifications(ids);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    return () => {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
+    };
+  }, [removeNotifications, upsertNotification, wsReady, wsToken]);
 
   return {
     notifications,

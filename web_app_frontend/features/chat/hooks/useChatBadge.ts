@@ -18,25 +18,24 @@ const buildWsUrl = (token: string) => {
 };
 
 export function useChatBadge() {
-  const [unreadRooms, setUnreadRooms] = useState<Set<string>>(new Set());
-  const pathname = usePathname();
-  const userIdRef = useRef<string | null>(null);
-  const isOnChat = useMemo(() => pathname?.includes('/chat'), [pathname]);
-  const unreadCount = unreadRooms.size;
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  const [unreadRooms, setUnreadRooms] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
     try {
       const raw = window.localStorage.getItem('chat_unread_rooms');
-      if (!raw) return;
+      if (!raw) return new Set();
       const parsed = JSON.parse(raw) as string[];
-      if (Array.isArray(parsed)) {
-        setUnreadRooms(new Set(parsed));
-      }
+      return Array.isArray(parsed) ? new Set(parsed) : new Set();
     } catch {
-      // ignore
+      return new Set();
     }
-  }, []);
+  });
+  const [wsToken, setWsToken] = useState('');
+  const [wsReady, setWsReady] = useState(false);
+  const pathname = usePathname();
+  const userIdRef = useRef<string | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const isOnChat = useMemo(() => pathname?.includes('/chat'), [pathname]);
+  const unreadCount = unreadRooms.size;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -61,50 +60,68 @@ export function useChatBadge() {
   }, []);
 
   useEffect(() => {
-    let socket: WebSocket | null = null;
-    let mounted = true;
+    let active = true;
 
     chatService
       .getWsToken()
       .then((token) => {
-        if (!mounted) return;
-        const wsUrl = buildWsUrl(token);
-        socket = new WebSocket(wsUrl);
+        if (active) setWsToken(token);
+      })
+      .catch(() => {
+        if (active) setWsToken('');
+      })
+      .finally(() => {
+        if (active) setWsReady(true);
+      });
 
-        socket.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data) as IncomingMessage;
-            if (payload.type === 'direct' || payload.type === 'group') {
-              if (payload.from && payload.from !== userIdRef.current) {
-                if (payload.room) {
-                  setUnreadRooms((prev) => {
-                    const next = new Set(prev);
-                    next.add(payload.room);
-                    return next;
-                  });
-                }
-              }
-            }
-            if (payload.type === 'read' && payload.user_id === userIdRef.current) {
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOnChat || !wsReady) return;
+
+    const wsUrl = buildWsUrl(wsToken);
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
+
+    socket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data) as IncomingMessage;
+        if (payload.type === 'direct' || payload.type === 'group') {
+          if (payload.from && payload.from !== userIdRef.current) {
+            if (payload.room) {
               setUnreadRooms((prev) => {
-                if (!prev.has(payload.room)) return prev;
                 const next = new Set(prev);
-                next.delete(payload.room);
+                next.add(payload.room);
                 return next;
               });
             }
-          } catch {
-            // ignore
           }
-        };
-      })
-      .catch(() => undefined);
+        }
+        if (payload.type === 'read' && payload.user_id === userIdRef.current) {
+          setUnreadRooms((prev) => {
+            if (!prev.has(payload.room)) return prev;
+            const next = new Set(prev);
+            next.delete(payload.room);
+            return next;
+          });
+        }
+      } catch {
+        // ignore
+      }
+    };
 
     return () => {
-      mounted = false;
-      socket?.close();
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
     };
-  }, [isOnChat]);
+  }, [isOnChat, wsReady, wsToken]);
 
   return { unreadCount, resetUnread: () => setUnreadRooms(new Set()) };
 }
