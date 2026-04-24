@@ -382,6 +382,21 @@ export function ChatPanel() {
     return () => clearTimeout(handle);
   }, [roomSearch, chatContext?.id]);
 
+  const emitReadReceipt = useCallback((roomId: string, lastReadAt: string) => {
+    const socket = socketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({
+          type: 'read',
+          room: roomId,
+          last_read_at: lastReadAt,
+        })
+      );
+      return;
+    }
+    chatService.markRead(roomId, lastReadAt).catch(() => undefined);
+  }, []);
+
   const handleIncoming = useCallback(
     (payload: IncomingMessage) => {
       if (payload.type === 'error') {
@@ -558,7 +573,7 @@ export function ChatPanel() {
         });
 
         if (room === activeRoomRef.current && payload.from !== userIdRef.current) {
-          chatService.markRead(room, payload.sent_at).catch(() => undefined);
+          emitReadReceipt(room, payload.sent_at);
           const currentUserId = userIdRef.current;
           if (currentUserId) {
             setReadReceipts((prev) => {
@@ -570,13 +585,6 @@ export function ChatPanel() {
               return next;
             });
           }
-          socketRef.current?.send(
-            JSON.stringify({
-              type: 'read',
-              room,
-              last_read_at: payload.sent_at,
-            })
-          );
           setUnreadByRoom((prev) => ({ ...prev, [room]: 0 }));
         } else if (payload.from !== userIdRef.current) {
           setUnreadByRoom((prev) => ({
@@ -586,7 +594,7 @@ export function ChatPanel() {
         }
       }
     },
-    [showToast]
+    [emitReadReceipt, showToast, userNameMap]
   );
 
   useEffect(() => {
@@ -610,43 +618,62 @@ export function ChatPanel() {
 
   useEffect(() => {
     if (!wsUrl || !wsReady) return;
-    setStatus('connecting');
-    const socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
+    let isMounted = true;
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
 
-    socket.onopen = () => {
-      setStatus('connected');
-      // join all known rooms so unread badges update in real time
-      roomsRef.current.forEach((room) => {
-        socket.send(JSON.stringify({ type: 'join', room: room.id }));
-      });
+    const connect = () => {
+      if (!isMounted) return;
+      setStatus('connecting');
+      const socket = new WebSocket(wsUrl);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        if (!isMounted) return;
+        retryCount = 0;
+        setStatus('connected');
+        roomsRef.current.forEach((room) => {
+          socket.send(JSON.stringify({ type: 'join', room: room.id }));
+        });
+      };
+
+      socket.onclose = () => {
+        if (!isMounted) return;
+        setStatus('disconnected');
+        // Bug 7 fix: reconnect with exponential backoff, cap at 30s
+        const delay = Math.min(1000 * 2 ** retryCount, 30000);
+        retryCount++;
+        retryTimeout = setTimeout(connect, delay);
+      };
+
+      socket.onerror = () => {
+        if (!isMounted) return;
+        setStatus('disconnected');
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data) as IncomingMessage;
+          handleIncoming(payload);
+        } catch {
+          // ignore malformed message
+        }
+      };
     };
-    socket.onclose = () => setStatus('disconnected');
-    socket.onerror = () => setStatus('disconnected');
-    socket.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data) as IncomingMessage;
-        handleIncoming(payload);
-      } catch {
-        // ignore malformed message
-      }
-    };
+
+    connect();
 
     return () => {
+      isMounted = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+      const socket = socketRef.current;
+      if (!socket) return;
       if (socket.readyState === WebSocket.OPEN) {
         socket.close();
       } else if (socket.readyState === WebSocket.CONNECTING) {
-        socket.addEventListener(
-          'open',
-          () => {
-            socket.close();
-          },
-          { once: true }
-        );
+        socket.addEventListener('open', () => socket.close(), { once: true });
       }
-      if (socketRef.current === socket) {
-        socketRef.current = null;
-      }
+      socketRef.current = null;
     };
   }, [handleIncoming, wsReady, wsUrl]);
 
@@ -691,7 +718,7 @@ export function ChatPanel() {
 
         const lastMessage = roomMessages[roomMessages.length - 1];
         if (lastMessage) {
-          await chatService.markRead(roomId, lastMessage.sent_at);
+          emitReadReceipt(roomId, lastMessage.sent_at);
           if (chatContext?.id) {
             setReadReceipts((prev) => {
               const next = { ...prev };
@@ -702,13 +729,6 @@ export function ChatPanel() {
               return next;
             });
           }
-          socketRef.current?.send(
-            JSON.stringify({
-              type: 'read',
-              room: roomId,
-              last_read_at: lastMessage.sent_at,
-            })
-          );
           if (typeof window !== 'undefined') {
             try {
               const raw = window.localStorage.getItem('chat_unread_rooms');
@@ -732,7 +752,7 @@ export function ChatPanel() {
         showToast({ title: 'Chat error', description: 'Unable to load messages.', variant: 'error' });
       }
     },
-    [showToast, chatContext?.id]
+    [emitReadReceipt, showToast, chatContext?.id]
   );
 
   const loadOlderMessages = useCallback(
@@ -988,23 +1008,21 @@ export function ChatPanel() {
     }
     try {
       const socket = socketRef.current;
+      // Bug 8 fix: use delete_message WS event + DELETE API, not the edit path
+      await chatService.deleteMessage(message.id);
       setMessages((prev) => ({
         ...prev,
-        [activeRoom]: (prev[activeRoom] ?? []).map((msg) =>
-          msg.id === message.id ? { ...msg, content: UNSENT_TOKEN } : msg
-        ),
+        [activeRoom]: (prev[activeRoom] ?? []).filter((msg) => msg.id !== message.id),
       }));
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(
           JSON.stringify({
-            type: 'edit_message',
+            type: 'delete_message',
             room: activeRoom,
             message_id: message.id,
-            content: UNSENT_TOKEN,
           })
         );
       }
-      await chatService.updateMessage(message.id, UNSENT_TOKEN);
     } catch {
       showToast({ title: 'Chat error', description: 'Unable to delete message.', variant: 'error' });
     }

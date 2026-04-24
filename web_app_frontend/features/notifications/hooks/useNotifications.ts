@@ -216,31 +216,58 @@ export function useNotifications() {
 
   useEffect(() => {
     if (!wsReady) return;
+    let active = true;
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
     const wsUrl = buildWsUrl(wsToken);
-    const socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
 
-    socket.onopen = () => setConnected(true);
-    socket.onclose = () => setConnected(false);
-    socket.onerror = () => setConnected(false);
-    socket.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data) as
-          | { type?: 'notification'; data?: Notification }
-          | { type?: 'notification_deleted'; data?: { ids?: string[] } };
-        if (payload.type === 'notification' && payload.data) {
-          upsertNotification(payload.data);
+    const connect = () => {
+      if (!active) return;
+      const socket = new WebSocket(wsUrl);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        if (!active) return;
+        retryCount = 0;
+        setConnected(true);
+      };
+      socket.onclose = () => {
+        if (!active) return;
+        setConnected(false);
+        const delay = Math.min(1000 * 2 ** retryCount, 30000);
+        retryCount += 1;
+        retryTimeout = setTimeout(connect, delay);
+      };
+      socket.onerror = () => {
+        if (!active) return;
+        setConnected(false);
+      };
+      socket.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data) as
+            | { type?: 'notification'; data?: Notification }
+            | { type?: 'notification_deleted'; data?: { ids?: string[] } };
+          if (payload.type === 'notification' && payload.data) {
+            upsertNotification(payload.data);
+          }
+          if (payload.type === 'notification_deleted') {
+            const ids = Array.isArray(payload.data?.ids) ? payload.data.ids : [];
+            removeNotifications(ids);
+          }
+        } catch {
+          // ignore
         }
-        if (payload.type === 'notification_deleted') {
-          const ids = Array.isArray(payload.data?.ids) ? payload.data.ids : [];
-          removeNotifications(ids);
-        }
-      } catch {
-        // ignore
-      }
+      };
     };
 
+    connect();
+
     return () => {
+      active = false;
+      if (retryTimeout) clearTimeout(retryTimeout);
+      setConnected(false);
+      const socket = socketRef.current;
+      if (!socket) return;
       if (socket.readyState === WebSocket.OPEN) {
         socket.close();
       } else if (socket.readyState === WebSocket.CONNECTING) {
@@ -252,9 +279,7 @@ export function useNotifications() {
           { once: true }
         );
       }
-      if (socketRef.current === socket) {
-        socketRef.current = null;
-      }
+      socketRef.current = null;
     };
   }, [removeNotifications, upsertNotification, wsReady, wsToken]);
 

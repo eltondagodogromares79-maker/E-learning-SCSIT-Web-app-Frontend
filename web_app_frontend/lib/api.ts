@@ -12,10 +12,15 @@ export const api = axios.create({
 });
 
 let isRefreshing = false;
-let refreshQueue: Array<(value: void) => void> = [];
+let refreshQueue: Array<{ resolve: () => void; reject: (error: unknown) => void }> = [];
 
 function resolveQueue() {
-  refreshQueue.forEach((cb) => cb());
+  refreshQueue.forEach(({ resolve }) => resolve());
+  refreshQueue = [];
+}
+
+function rejectQueue(error: unknown) {
+  refreshQueue.forEach(({ reject }) => reject(error));
   refreshQueue = [];
 }
 
@@ -45,7 +50,7 @@ api.interceptors.response.use(
     }
 
     if (isRefreshing) {
-      await new Promise<void>((resolve) => refreshQueue.push(resolve));
+      await new Promise<void>((resolve, reject) => refreshQueue.push({ resolve, reject }));
       return api(originalRequest);
     }
 
@@ -63,7 +68,7 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError) {
       tokenStorage.clear();
-      refreshQueue = [];
+      rejectQueue(refreshError);
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
