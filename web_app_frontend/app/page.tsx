@@ -3,36 +3,35 @@ import { PublicNav } from '@/components/navigation/PublicNav';
 import { PublicFooter } from '@/components/navigation/PublicFooter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { LayoutDashboard, ShieldCheck, BarChart3, GraduationCap, BookOpen, Users } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, BarChart3, GraduationCap, BookOpen } from 'lucide-react';
 
 const features = [
   {
     icon: LayoutDashboard,
     title: 'Unified learning workspace',
-    description: 'Learning materials, assignments, and assessments in one organized view.',
+    description: 'Learning materials, assignments, quizzes, and online classes in one organized view.',
     accent: 'var(--brand-blue)',
     muted: 'var(--brand-blue-muted)',
   },
   {
     icon: ShieldCheck,
     title: 'Role-based control',
-    description: 'Tailored dashboards for students, teachers, and admins.',
+    description: 'Tailored dashboards for students and teachers.',
     accent: 'var(--brand-gold)',
     muted: 'var(--brand-gold-muted)',
   },
   {
     icon: BarChart3,
     title: 'Actionable reporting',
-    description: 'Track performance and engagement with clarity.',
+    description: 'Track student performance, attendance, and quiz results with clarity.',
     accent: 'var(--brand-blue)',
     muted: 'var(--brand-blue-muted)',
   },
 ];
 
 const roles = [
-  { icon: GraduationCap, title: 'Students', detail: 'Stay on top of learning materials, assignments, and grades.' },
-  { icon: BookOpen, title: 'Teachers', detail: 'Create content, grade faster, and manage classes.' },
-  { icon: Users, title: 'Advisers', detail: 'Guide sections and track student progress.' },
+  { icon: GraduationCap, title: 'Students', detail: 'Access learning materials, assignments, quizzes, and join online classes.' },
+  { icon: BookOpen, title: 'Teachers', detail: 'Manage classes, create quizzes and assignments, grade submissions, and host live classes.' },
 ];
 
 export default function LandingPage() {
@@ -94,7 +93,6 @@ export default function LandingPage() {
                 {[
                   { label: 'Students', icon: GraduationCap },
                   { label: 'Teachers', icon: BookOpen },
-                  { label: 'Advisers', icon: Users },
                 ].map(({ label, icon: Icon }) => (
                   <div key={label} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)' }}>
                     <Icon className="h-3.5 w-3.5 text-white/80" />
@@ -111,7 +109,7 @@ export default function LandingPage() {
           <div className="mb-10 text-center">
             <div className="mb-3 inline-block h-0.5 w-10 rounded-full" style={{ background: 'var(--brand-gold)' }} />
             <h2 className="text-3xl font-semibold" style={{ color: 'var(--foreground)' }}>Focused on Junior & Senior High School</h2>
-            <p className="mt-3 text-sm" style={{ color: 'var(--muted-foreground)' }}>Built specifically for the needs of JHS and SHS students, teachers, and advisers at SCSIT.</p>
+            <p className="mt-3 text-sm" style={{ color: 'var(--muted-foreground)' }}>Built specifically for the needs of JHS and SHS students and teachers at SCSIT.</p>
             <div className="mt-4 flex items-center justify-center gap-3">
               <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold" style={{ background: 'rgba(251,191,36,0.12)', color: '#b45309', border: '1px solid rgba(251,191,36,0.3)' }}>
                 <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
@@ -155,12 +153,12 @@ export default function LandingPage() {
             <div className="grid gap-10 lg:grid-cols-[0.55fr,1fr]">
               <div className="space-y-3">
                 <div className="h-0.5 w-10 rounded-full" style={{ background: 'var(--brand-gold)' }} />
-                <h2 className="text-3xl font-semibold" style={{ color: 'var(--foreground)' }}>Built for every academic role</h2>
+                <h2 className="text-3xl font-semibold" style={{ color: 'var(--foreground)' }}>Built for students &amp; teachers</h2>
                   <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
                     Each role gets a personalized dashboard with exactly the tools needed for daily work.
                   </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2">
                 {roles.map(({ icon: Icon, title, detail }) => (
                   <div
                     key={title}
@@ -193,7 +191,7 @@ export default function LandingPage() {
             <div className="relative">
               <div className="mb-2 h-0.5 w-10 rounded-full bg-white/40" />
               <h2 className="text-2xl font-semibold text-white">Ready to connect your learning system?</h2>
-              <p className="mt-2 text-sm text-white/65">Start with the UI today and plug in your API later.</p>
+              <p className="mt-2 text-sm text-white/65">Sign in and start managing your classes today.</p>
             </div>
             <Button as={Link} href="/dashboard" size="lg" className="relative shrink-0" style={{ background: 'white', color: '#000' }}>
               View dashboards

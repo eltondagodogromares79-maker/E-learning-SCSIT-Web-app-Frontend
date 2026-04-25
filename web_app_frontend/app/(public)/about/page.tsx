@@ -11,7 +11,7 @@ const pillars = [
     icon: Eye,
     step: '01',
     title: 'Clarity first',
-    detail: 'Every screen is designed around the daily priorities of educators and learners — no clutter, no noise.',
+    detail: 'Every screen is designed around the daily priorities of students and teachers — no clutter, no noise.',
     accent: 'var(--brand-blue)',
     muted: 'var(--brand-blue-muted)',
   },
@@ -27,7 +27,7 @@ const pillars = [
     icon: Plug,
     step: '03',
     title: 'API-ready foundation',
-    detail: 'Strong TypeScript types mirror backend models for seamless integration when you are ready.',
+    detail: 'Django REST backend with JWT auth, real-time WebSocket notifications, and AI-assisted grading built in.',
     accent: 'var(--brand-blue)',
     muted: 'var(--brand-blue-muted)',
   },
@@ -41,9 +41,9 @@ const team = [
 
 const facts = [
   { label: 'Founded', value: '1983' },
-  { label: 'Focus', value: 'Senior / Junior High School' },
-  { label: 'Architecture', value: 'Feature-based' },
-  { label: 'Stack', value: 'Next.js + TypeScript + Django' },
+  { label: 'Focus', value: 'Junior & Senior High School' },
+  { label: 'Stack', value: 'Next.js + Django + Rust' },
+  { label: 'Real-time', value: 'WebSocket + Notifications' },
 ];
 
 export default function AboutPage() {
@@ -74,7 +74,7 @@ export default function AboutPage() {
                 About <span style={{ color: 'var(--brand-blue)' }}>SCSIT NEXUS</span>
               </h1>
               <p className="text-lg leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-                SCSIT NEXUS is a UI-first learning management experience that balances simplicity with powerful academic workflows — built for the real world of K-12 schools.
+                SCSIT NEXUS is a learning management system built for Junior and Senior High School students and teachers at SCSIT — covering subjects, assignments, quizzes, online classes, and real-time notifications.
                 SCSIT NEXUS stands for Salazar Colleges of Science and Institute of Technology.
               </p>
             </div>
@@ -105,7 +105,7 @@ export default function AboutPage() {
               Built with purpose, designed with care
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
-              We believe that great software for education should feel effortless. SCSIT NEXUS was created to remove friction from academic operations — so teachers can teach, students can learn, and administrators can lead.
+            We believe great school software should feel effortless. SCSIT NEXUS was built to remove friction from academic operations — so teachers can manage classes and grade work, and students can focus on learning.
             </p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
               Every design decision is grounded in real school workflows, not abstract product thinking.

@@ -11,7 +11,7 @@ const highlights = [
     icon: BookOpen,
     step: '01',
     title: 'Centralized curriculum',
-    detail: 'Track subjects, learning materials, and assessments from a single organized workspace.',
+    detail: 'Access subjects, learning materials, assignments, quizzes, and online classes from one workspace.',
     accent: 'var(--brand-blue)',
     muted: 'var(--brand-blue-muted)',
   },
@@ -19,7 +19,7 @@ const highlights = [
     icon: Zap,
     step: '02',
     title: 'Intuitive workflows',
-    detail: 'Streamlined submission and grading cycles that save time every day.',
+    detail: 'Streamlined quiz taking, assignment submission, and grading cycles that save time every day.',
     accent: 'var(--brand-gold)',
     muted: 'var(--brand-gold-muted)',
   },
@@ -27,14 +27,14 @@ const highlights = [
     icon: PieChart,
     step: '03',
     title: 'Clear analytics',
-    detail: 'Real-time insights by class and department, always within reach.',
+    detail: 'Real-time student performance and attendance insights, always within reach.',
     accent: 'var(--brand-blue)',
     muted: 'var(--brand-blue-muted)',
   },
 ];
 
 const stats = [
-  { value: '12+', label: 'Academic roles supported' },
+  { value: '2', label: 'Roles — Student & Teacher' },
   { value: '100%', label: 'Role-based access control' },
   { value: '∞', label: 'Scalable by design' },
 ];
@@ -92,7 +92,7 @@ export default function HomePage() {
                 <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,18,130,0.5) 0%, transparent 60%)' }} />
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="rounded-2xl bg-white/10 p-3 backdrop-blur-md" style={{ border: '1px solid rgba(255,255,255,0.2)' }}>
-                    <p className="text-xs font-semibold text-white">🎓 Empowering students, teachers & advisers</p>
+                    <p className="text-xs font-semibold text-white">🎓 Empowering students & teachers</p>
                   </div>
                 </div>
               </div>
@@ -161,7 +161,7 @@ export default function HomePage() {
           <div className="absolute -top-16 -right-16 h-56 w-56 rounded-full opacity-10" style={{ background: 'white' }} />
           <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full opacity-10" style={{ background: 'white' }} />
           <h2 className="relative text-3xl font-semibold text-white">Ready to get started?</h2>
-          <p className="relative mt-3 text-sm text-white/65">Jump into the dashboard and explore every role.</p>
+          <p className="relative mt-3 text-sm text-white/65">Sign in and explore your dashboard.</p>
           <div className="relative mt-8">
             <Button as={Link} href="/dashboard" size="lg" style={{ background: 'white', color: '#000' }}>
               Go to dashboard

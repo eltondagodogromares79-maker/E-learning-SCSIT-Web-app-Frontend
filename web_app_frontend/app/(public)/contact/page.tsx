@@ -127,7 +127,7 @@ export default function DirectoryPage() {
                 Directory
               </span>
               <h1 className="text-4xl font-semibold leading-tight" style={{ color: 'var(--foreground)' }}>
-                Teachers, advisers &amp; sections
+                Teachers &amp; sections
               </h1>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--muted-foreground)' }}>
                 Browse the current school roster for quick reference and coordination.
@@ -286,7 +286,7 @@ export default function DirectoryPage() {
                 </div>
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--brand-blue)' }}>Sections</div>
-                  <h2 className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>Homerooms</h2>
+                  <h2 className="text-base font-semibold" style={{ color: 'var(--foreground)' }}>Sections</h2>
                 </div>
               </div>
 
