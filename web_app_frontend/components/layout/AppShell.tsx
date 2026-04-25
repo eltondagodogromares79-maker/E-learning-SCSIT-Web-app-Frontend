@@ -8,7 +8,6 @@ import { cn } from '@/lib/utils';
 import type { NavItem } from '@/components/navigation/nav-config';
 import type { UserRole } from '@/types';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { GlobalSpinner } from '@/components/feedback/GlobalSpinner';
 import { DashboardFooter } from '@/components/layout/DashboardFooter';
 
 interface AppShellProps {
@@ -86,7 +85,6 @@ export default function AppShell({ title, subtitle, navItems, children, required
 
   return (
     <div className="min-h-screen" style={shellStyle}>
-      <GlobalSpinner />
       {minimal ? (
         <main className={cn('px-4 pb-8 pt-6 sm:px-8')}>{children}</main>
       ) : (
