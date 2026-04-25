@@ -20,6 +20,10 @@ export interface StudentPerformanceStudent {
   student_name: string;
   student_number?: string | null;
   gender?: string | null;
+  phone_number?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_relationship?: string | null;
   assignments?: { missing: number; submitted: number; total: number; average_score: number | null };
   quizzes?: { missing: number; attempted: number; total: number; average_score: number | null };
   attendance: { present: number; absent: number; late: number; excused: number; total: number };

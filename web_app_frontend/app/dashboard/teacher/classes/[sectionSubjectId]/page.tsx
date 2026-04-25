@@ -810,6 +810,7 @@ function StudentsTab({ sectionSubjectId }: { sectionSubjectId: string }) {
   const { data, isLoading } = useStudentPerformance();
   const section = data?.sections.find((s) => s.section_subject_id === sectionSubjectId);
   const students = section?.students ?? [];
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (isLoading) {
     return <div className="py-8 text-center text-sm text-neutral-400">Loading students…</div>;
@@ -828,19 +829,51 @@ function StudentsTab({ sectionSubjectId }: { sectionSubjectId: string }) {
         </Link>
       </div>
       <div className="space-y-2">
-        {students.map((student, i) => (
-          <div key={student.student_id} className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3">
-            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
-              {studentInitials(student.student_name)}
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-neutral-900">{student.student_name}</div>
-              {student.student_number && (
-                <div className="text-xs text-neutral-400">ID · {student.student_number}</div>
+        {students.map((student, i) => {
+          const isExpanded = expandedId === student.student_id;
+          const hasContact = student.phone_number || student.emergency_contact_name || student.emergency_contact_phone;
+          return (
+            <div key={student.student_id} className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-neutral-50 transition-colors"
+                onClick={() => setExpandedId(isExpanded ? null : student.student_id)}
+              >
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
+                  {studentInitials(student.student_name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-neutral-900">{student.student_name}</div>
+                  {student.student_number && (
+                    <div className="text-xs text-neutral-400">ID · {student.student_number}</div>
+                  )}
+                </div>
+                <span className="text-xs text-neutral-400">{isExpanded ? '▲' : '▼'}</span>
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-neutral-100 px-4 py-3 grid grid-cols-1 gap-3 sm:grid-cols-2 bg-neutral-50">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Phone Number</div>
+                    <div className="text-sm text-neutral-700">{student.phone_number || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Emergency Contact</div>
+                    <div className="text-sm text-neutral-700">{student.emergency_contact_name || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Emergency No.</div>
+                    <div className="text-sm text-neutral-700">{student.emergency_contact_phone || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">Relation</div>
+                    <div className="text-sm text-neutral-700 capitalize">{student.emergency_contact_relationship || '—'}</div>
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
