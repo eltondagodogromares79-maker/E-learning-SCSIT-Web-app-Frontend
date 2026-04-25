@@ -189,9 +189,6 @@ export default function TeacherDashboardPage() {
                 <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Overview</span>
               </div>
               <h1 className="text-3xl font-bold text-white lg:text-4xl">My Classes</h1>
-              <p className="mt-2 text-sm text-white/70">
-                Avg grade: {averageGrade} · {pendingReviews} pending reviews
-              </p>
             </div>
             <div className="flex flex-wrap gap-3">
               {[

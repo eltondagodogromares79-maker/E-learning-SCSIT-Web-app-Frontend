@@ -84,16 +84,24 @@ export default function StudentDashboardPage() {
                 {subjects.length} subject{subjects.length !== 1 ? 's' : ''} enrolled this year
               </p>
             </div>
-            <div className="relative w-full lg:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name, code, teacher…"
-                className="w-full rounded-xl border border-white/20 bg-white/10 py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/40 focus:bg-white/15"
-              />
-            </div>
           </div>
+        </div>
+
+        {/* ── Search + filter for subjects ── */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--muted-foreground)' }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name, code, teacher…"
+              className="w-full rounded-xl border py-2.5 pl-9 pr-4 text-sm outline-none"
+              style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--foreground)' }}
+            />
+          </div>
+          <span className="ml-auto text-xs" style={{ color: 'var(--muted-foreground)' }}>
+            {filteredSubjects.length} subject{filteredSubjects.length !== 1 ? 's' : ''}
+          </span>
         </div>
 
         {/* ── Subject Cards ── */}
