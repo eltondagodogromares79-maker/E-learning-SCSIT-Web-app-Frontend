@@ -111,7 +111,7 @@ export function Sidebar({ isOpen, onToggle, navItems }: SidebarProps) {
               )}>
                 <Icon className={cn('h-4 w-4', isActive ? 'text-white' : 'text-[var(--brand-blue)] group-hover:text-[var(--brand-blue)]')} />
               </div>
-              {isOpen ? <span className="flex-1">{item.label}</span> : null}
+              {isOpen ? <span className="flex-1" suppressHydrationWarning>{item.label}</span> : null}
               {isActive && isOpen && (
                 <div className="h-1.5 w-1.5 rounded-full bg-white" />
               )}

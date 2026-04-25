@@ -10,6 +10,8 @@ export interface TranscriptSubject {
   subject_code?: string;
   subject_name?: string;
   teacher_name?: string;
+  schedule_days?: string | null;
+  schedule_time?: string | null;
   school_year?: string;
 }
 

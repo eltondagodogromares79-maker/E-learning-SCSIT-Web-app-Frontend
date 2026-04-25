@@ -25,7 +25,7 @@ export const studentNav: NavItem[] = [
   { label: 'Assignments', href: '/dashboard/student/assignments', icon: 'ClipboardList' },
   { label: 'Quizzes', href: '/dashboard/student/quizzes', icon: 'ClipboardCheck' },
   { label: 'Live Classes', href: '/dashboard/student/online-classes', icon: 'Video' },
-  { label: 'School Records', href: '/dashboard/student/transcript', icon: 'FileText' },
+  { label: 'My Records', href: '/dashboard/student/transcript', icon: 'FileText' },
 ];
 
 export const teacherNav: NavItem[] = [

@@ -15,7 +15,7 @@ export default function StudentTranscriptPage() {
   const toggle = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
-    <AppShell title="Student Dashboard" subtitle="School Records" navItems={studentNav} requiredRole="student">
+    <AppShell title="Student Dashboard" subtitle="My Records" navItems={studentNav} requiredRole="student">
       <div className="space-y-8 p-6 lg:p-8">
 
         {/* ── Hero ── */}
@@ -28,7 +28,7 @@ export default function StudentTranscriptPage() {
                 <GraduationCap className="h-5 w-5 text-white/70" />
                 <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Academic Record</span>
               </div>
-              <h1 className="text-3xl font-bold text-white lg:text-4xl">School Records</h1>
+              <h1 className="text-3xl font-bold text-white lg:text-4xl">My Records</h1>
               <p className="mt-2 text-sm text-white/70">{enrollments.length} enrollment record{enrollments.length !== 1 ? 's' : ''}</p>
             </div>
             {current && (
@@ -127,9 +127,17 @@ export default function StudentTranscriptPage() {
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                                    <User className="h-3.5 w-3.5" />
-                                    {subject.teacher_name ?? 'TBA'}
+                                  <div className="flex flex-col items-end gap-1 text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                                    <div className="flex items-center gap-1">
+                                      <User className="h-3.5 w-3.5" />
+                                      {subject.teacher_name ?? 'TBA'}
+                                    </div>
+                                    {(subject.schedule_days || subject.schedule_time) && (
+                                      <div className="flex items-center gap-1">
+                                        <CalendarDays className="h-3.5 w-3.5" />
+                                        {[subject.schedule_days, subject.schedule_time].filter(Boolean).join(' · ')}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               ))}
