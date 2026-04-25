@@ -7,7 +7,7 @@ export function GlobalSpinner() {
   const [visible, setVisible] = useState(false);
   const [width, setWidth] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const rafRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
