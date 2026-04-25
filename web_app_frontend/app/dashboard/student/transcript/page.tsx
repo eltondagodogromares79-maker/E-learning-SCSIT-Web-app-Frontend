@@ -88,7 +88,8 @@ export default function StudentTranscriptPage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>
-                              {enrollment.program_name ?? 'Program'} · {enrollment.year_level_name ?? 'Year level'}
+                              {enrollment.year_level_name ?? 'Year level'}
+                              {enrollment.section_name ? ` · ${enrollment.section_name}` : ''}
                             </span>
                             <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
                               style={{ background: isCurrent ? 'rgba(5,150,105,0.1)' : 'rgba(8,145,178,0.1)', color: accentColor }}>
@@ -96,7 +97,7 @@ export default function StudentTranscriptPage() {
                             </span>
                           </div>
                           <p className="mt-0.5 text-xs" style={{ color: 'var(--muted-foreground)' }}>
-                            {enrollment.term_label ?? '—'} · {enrollment.school_year_name ?? '—'}
+                            {enrollment.term_label ?? '—'}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2 text-xs" style={{ color: 'var(--muted-foreground)' }}>
