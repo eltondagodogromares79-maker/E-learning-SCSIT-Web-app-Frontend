@@ -30,4 +30,8 @@ export const dashboardService = {
     const { data } = await api.get<StudentPerformanceDetail>(`/api/dashboard/student-performance/${studentId}/`);
     return data;
   },
+  async teacherStudents(): Promise<{ id: string; user: string; user_name: string; student_number?: string | null }[]> {
+    const { data } = await api.get('/api/dashboard/teacher-students/');
+    return data;
+  },
 };

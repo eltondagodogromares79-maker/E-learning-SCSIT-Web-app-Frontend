@@ -6,10 +6,9 @@ import { motion } from 'framer-motion';
 import AppShell from '@/components/layout/AppShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { teacherNav } from '@/components/navigation/nav-config';
-import { useStudents } from '@/features/students/hooks/useStudents';
 import { useAssignmentSubmissions } from '@/features/assignments/hooks/useAssignmentSubmissions';
 import { useQuizAttempts } from '@/features/quizzes/hooks/useQuizAttempts';
-import { useTeacherStats } from '@/features/dashboard/hooks/useDashboardStats';
+import { useTeacherStats, useTeacherStudents } from '@/features/dashboard/hooks/useDashboardStats';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { useAttendanceSummary } from '@/features/attendance/hooks/useAttendanceSummary';
 import { useStudentPerformance } from '@/features/dashboard/hooks/useStudentPerformance';
@@ -34,7 +33,7 @@ const ACCENT_COLORS = [
 type StudentFilter = 'all' | 'needs_attention';
 
 export default function TeacherDashboardPage() {
-  const { data: students = [] } = useStudents();
+  const { data: students = [] } = useTeacherStudents();
   const { data: submissions = [] } = useAssignmentSubmissions();
   const { data: attempts = [] } = useQuizAttempts();
   const { data: stats = [] } = useTeacherStats();
@@ -140,14 +139,10 @@ export default function TeacherDashboardPage() {
     let base = students.filter((s) =>
       !q || [s.user_name, s.student_number].filter(Boolean).join(' ').toLowerCase().includes(q)
     );
-    if (isAdviser) {
-      const ids = new Set(adviserAttendanceSummary.map((i) => i.student_id));
-      base = base.filter((s) => ids.has(s.id));
-    }
     if (studentIdsInSection) base = base.filter((s) => studentIdsInSection.has(s.id));
     if (studentFilter === 'needs_attention') base = base.filter((s) => needsAttentionIds.has(s.id));
     return base;
-  }, [adviserAttendanceSummary, isAdviser, studentQuery, students, studentIdsInSection, studentFilter, needsAttentionIds]);
+  }, [studentQuery, students, studentIdsInSection, studentFilter, needsAttentionIds]);
 
   // Class cards — sorted by schedule_time ascending
   const classSections = useMemo(() => {

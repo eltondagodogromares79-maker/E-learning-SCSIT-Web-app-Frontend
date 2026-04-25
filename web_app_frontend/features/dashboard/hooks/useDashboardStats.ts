@@ -35,3 +35,10 @@ export function useDeanStats() {
     queryFn: () => dashboardService.dean(),
   });
 }
+
+export function useTeacherStudents() {
+  return useQuery({
+    queryKey: ['dashboard', 'teacher-students'],
+    queryFn: () => dashboardService.teacherStudents(),
+  });
+}
