@@ -23,6 +23,13 @@ import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm';
 
+type AiDraftQuestion = {
+  question?: string;
+  question_text?: string;
+  question_type?: string;
+  points?: number;
+};
+
 function TeacherQuizzesPageInner() {
   const { data: quizzes = [], isLoading: quizzesLoading } = useQuizzes();
   const { data: sectionSubjects = [] } = useSectionSubjects();
@@ -50,7 +57,7 @@ function TeacherQuizzesPageInner() {
   const [aiDraftAiGrade, setAiDraftAiGrade] = useState(true);
   const [aiSecurityLevel, setAiSecurityLevel] = useState<'normal' | 'strict'>('strict');
   const [aiDraftSecurityLevel, setAiDraftSecurityLevel] = useState<'normal' | 'strict'>('strict');
-  const [aiDraftQuestions, setAiDraftQuestions] = useState<Array<Record<string, unknown>>>([]);
+  const [aiDraftQuestions, setAiDraftQuestions] = useState<AiDraftQuestion[]>([]);
   const [aiPreviewOpen, setAiPreviewOpen] = useState(false);
   const [aiIsAvailable, setAiIsAvailable] = useState(false);
   const [aiDraftIsAvailable, setAiDraftIsAvailable] = useState(false);

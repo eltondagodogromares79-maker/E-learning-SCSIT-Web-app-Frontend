@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
@@ -29,7 +29,28 @@ const fallbackStats = [
   { icon: Award, value: '…', label: 'Teachers' },
 ];
 
-export default function LoginPage() {
+function LoginFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--background)' }}>
+      <div
+        className="w-full max-w-sm rounded-2xl p-7 shadow-sm"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+      >
+        <div className="space-y-4 animate-pulse">
+          <div className="h-8 w-40 rounded-lg bg-slate-200" />
+          <div className="h-4 w-56 rounded-lg bg-slate-100" />
+          <div className="space-y-3 pt-2">
+            <div className="h-10 w-full rounded-xl bg-slate-100" />
+            <div className="h-10 w-full rounded-xl bg-slate-100" />
+            <div className="h-10 w-full rounded-xl bg-slate-200" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isLoading, error, clearError, user, isInitializing, hasHydrated } = useAuth();
@@ -283,5 +304,13 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginContent />
+    </Suspense>
   );
 }
