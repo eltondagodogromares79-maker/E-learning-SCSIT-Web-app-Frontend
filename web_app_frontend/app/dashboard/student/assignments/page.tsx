@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
-import { Badge } from '@/components/ui/badge';
+import { StudentCardGridSkeleton } from '@/components/layout/StudentListSkeletons';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useAssignments } from '@/features/assignments/hooks/useAssignments';
 import { useSubjects } from '@/features/subjects/hooks/useSubjects';
@@ -22,7 +22,17 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'late',      label: 'Late / Overdue' },
 ];
 
-function getStatus(assignmentId: string, dueDate: string, submissionLookup: Record<string, any>) {
+type SubmissionSnapshot = {
+  graded_at?: string | null;
+  score?: number | null;
+  submitted_at?: string | null;
+};
+
+function getStatus(
+  assignmentId: string,
+  dueDate: string,
+  submissionLookup: Record<string, SubmissionSnapshot | undefined>
+) {
   const submission = submissionLookup[assignmentId];
   const due = new Date(dueDate);
   if (submission) {
@@ -39,9 +49,9 @@ function getStatus(assignmentId: string, dueDate: string, submissionLookup: Reco
 }
 
 export default function StudentAssignmentsPage() {
-  const { data: assignments = [] } = useAssignments();
-  const { data: subjects = [] } = useSubjects();
-  const { data: submissions = [] } = useAssignmentSubmissions();
+  const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments();
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects();
+  const { data: submissions = [], isLoading: submissionsLoading } = useAssignmentSubmissions();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
@@ -49,6 +59,7 @@ export default function StudentAssignmentsPage() {
   const subjectLookup = Object.fromEntries(subjects.map((s) => [s.id, s.name]));
   const submissionLookup = Object.fromEntries(submissions.map((s) => [s.assignment_id, s]));
   const [sectionFilter, setSectionFilter] = useState('');
+  const pageLoading = assignmentsLoading || subjectsLoading || submissionsLoading;
 
   const sections = useMemo(() => {
     const names = new Set(assignments.map((a) => a.subject_name ?? subjectLookup[a.subject_id] ?? '').filter(Boolean));
@@ -72,7 +83,7 @@ export default function StudentAssignmentsPage() {
         const rightTime = new Date(right.created_at).getTime();
         return sortOrder === 'newest' ? rightTime - leftTime : leftTime - rightTime;
       });
-  }, [assignments, query, sortOrder, statusFilter, submissionLookup, subjectLookup]);
+  }, [assignments, query, sortOrder, statusFilter, submissionLookup, subjectLookup, sectionFilter]);
 
   const counts = useMemo(() => {
     const c = { pending: 0, submitted: 0, graded: 0, late: 0 };
@@ -167,7 +178,9 @@ export default function StudentAssignmentsPage() {
         </div>
 
         {/* ── Cards ── */}
-        {filtered.length === 0 ? (
+        {pageLoading ? (
+          <StudentCardGridSkeleton count={6} />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
             <ClipboardList className="h-8 w-8 opacity-30" />

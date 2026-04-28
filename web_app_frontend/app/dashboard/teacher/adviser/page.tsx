@@ -4,9 +4,11 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useStudentPerformance } from '@/features/dashboard/hooks/useStudentPerformance';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import { Search, Users, ShieldAlert, BookOpen, ChevronRight, School, AlertTriangle } from 'lucide-react';
 
 export default function AdviserDashboardPage() {
@@ -19,6 +21,7 @@ export default function AdviserDashboardPage() {
   const [sectionFilter, setSectionFilter] = useState('all');
   const [riskOnly, setRiskOnly] = useState(false);
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const showListSkeleton = useReliableSkeleton(isLoading);
 
   const filteredSections = useMemo(() =>
     sectionFilter === 'all' ? sections : sections.filter((s) => s.section_id === sectionFilter),
@@ -118,7 +121,7 @@ export default function AdviserDashboardPage() {
                 <option value="all">All sections</option>
                 {sections.map((s) => <option key={s.section_id} value={s.section_id}>{s.section_name}</option>)}
               </select>
-              <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value as any)}
+              <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value as 'all' | 'male' | 'female')}
                 className="h-10 rounded-xl border px-3 text-sm outline-none"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--foreground)' }}>
                 <option value="all">All genders</option>
@@ -135,12 +138,8 @@ export default function AdviserDashboardPage() {
             </div>
 
             {/* ── Student cards ── */}
-            {isLoading ? (
-              <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
-                style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
-                <School className="h-8 w-8 opacity-30 animate-pulse" />
-                <p className="text-sm">Loading adviser records…</p>
-              </div>
+            {showListSkeleton ? (
+              <TeacherCardGridSkeleton />
             ) : sorted.length === 0 ? (
               <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>

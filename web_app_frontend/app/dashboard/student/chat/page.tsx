@@ -1,9 +1,15 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import AppShell from '@/components/layout/AppShell';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { studentNav } from '@/components/navigation/nav-config';
-import { ChatPanel } from '@/features/chat/components/ChatPanel';
+import { ChatPanelSkeleton } from '@/features/chat/components/ChatPanelSkeleton';
+
+const ChatPanel = dynamic(
+  () => import('@/features/chat/components/ChatPanel').then((mod) => mod.ChatPanel),
+  { ssr: false, loading: () => <ChatPanelSkeleton /> }
+);
 
 export default function StudentChatPage() {
   return (

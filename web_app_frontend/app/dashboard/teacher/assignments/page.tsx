@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,11 +18,12 @@ import { useAiGenerateAssignment } from '@/features/assignments/hooks/useAiGener
 import { useAiSaveAssignment } from '@/features/assignments/hooks/useAiSaveAssignment';
 import { useDeleteAssignment } from '@/features/assignments/hooks/useDeleteAssignment';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm';
 
 function TeacherAssignmentsPageInner() {
-  const { data: assignments = [] } = useAssignments();
+  const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments();
   const { data: sectionSubjects = [] } = useSectionSubjects();
   const createAssignment = useCreateAssignment();
   const aiGenerateAssignment = useAiGenerateAssignment();
@@ -30,9 +32,10 @@ function TeacherAssignmentsPageInner() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const confirm = useConfirm();
+  const showAssignmentsSkeleton = useReliableSkeleton(assignmentsLoading);
 
   const [createMode, setCreateMode] = useState<'ai' | 'manual'>('manual');
-  const [sectionSubjectId, setSectionSubjectId] = useState('');
+  const [sectionSubjectId, setSectionSubjectId] = useState(() => searchParams.get('sectionSubjectId') ?? '');
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiDueDate, setAiDueDate] = useState('');
   const [aiTotalPoints, setAiTotalPoints] = useState('100');
@@ -49,14 +52,6 @@ function TeacherAssignmentsPageInner() {
   const [manualDueDate, setManualDueDate] = useState('');
   const [manualTotalPoints, setManualTotalPoints] = useState('100');
   const [manualAllowLate, setManualAllowLate] = useState(false);
-
-  useEffect(() => {
-    if (sectionSubjectId) return;
-    const fromUrl = searchParams.get('sectionSubjectId');
-    if (fromUrl) {
-      setSectionSubjectId(fromUrl);
-    }
-  }, [searchParams, sectionSubjectId]);
 
   const toIso = (value: string) => {
     if (!value) return '';
@@ -411,7 +406,11 @@ function TeacherAssignmentsPageInner() {
         ) : null}
 
         <div className="grid gap-6 md:grid-cols-2">
-          {assignments.length === 0 ? (
+          {showAssignmentsSkeleton ? (
+            <div className="col-span-full">
+              <TeacherCardGridSkeleton count={4} columnsClass="md:grid-cols-2" />
+            </div>
+          ) : assignments.length === 0 ? (
             <div className="col-span-full rounded-2xl border border-neutral-200 bg-white/80 p-6 text-sm text-neutral-500 shadow-sm">
               No assignments found.
             </div>

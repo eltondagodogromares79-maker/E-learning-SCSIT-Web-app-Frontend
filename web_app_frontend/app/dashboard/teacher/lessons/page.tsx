@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,9 +21,10 @@ import { useToast } from '@/components/ui/toast';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { lessonService } from '@/features/lessons/services/lessonService';
 import { useConfirm } from '@/components/ui/confirm';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 
 function TeacherLessonsPageInner() {
-  const { data: lessons = [] } = useLessons();
+  const { data: lessons = [], isLoading: lessonsLoading } = useLessons();
   const { data: sectionSubjects = [] } = useSectionSubjects();
   const aiGenerate = useAiGenerateLesson();
   const aiSave = useAiSaveLesson();
@@ -31,8 +33,9 @@ function TeacherLessonsPageInner() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const confirm = useConfirm();
+  const showLessonsSkeleton = useReliableSkeleton(lessonsLoading);
 
-  const [sectionSubjectId, setSectionSubjectId] = useState('');
+  const [sectionSubjectId, setSectionSubjectId] = useState(() => searchParams.get('sectionSubjectId') ?? '');
   const [lessonType, setLessonType] = useState<'text' | 'pdf'>('text');
   const [prompt, setPrompt] = useState('');
   const [resourceUrl, setResourceUrl] = useState('');
@@ -49,14 +52,6 @@ function TeacherLessonsPageInner() {
   const [createMode, setCreateMode] = useState<'ai' | 'manual'>('manual');
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'text' | 'pdf' | 'link' | 'video'>('all');
-
-  useEffect(() => {
-    if (sectionSubjectId) return;
-    const fromUrl = searchParams.get('sectionSubjectId');
-    if (fromUrl) {
-      setSectionSubjectId(fromUrl);
-    }
-  }, [searchParams, sectionSubjectId]);
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredLessons = lessons.filter((lesson) => {
@@ -434,7 +429,9 @@ function TeacherLessonsPageInner() {
                 </select>
               </div>
             </div>
-            {filteredLessons.length === 0 ? (
+            {showLessonsSkeleton ? (
+              <TeacherCardGridSkeleton count={3} columnsClass="" />
+            ) : filteredLessons.length === 0 ? (
               <div className="text-sm text-neutral-500">No learning materials yet.</div>
             ) : (
               filteredLessons.slice(0, 6).map((lesson) => (

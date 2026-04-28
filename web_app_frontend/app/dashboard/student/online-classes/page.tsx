@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import AppShell from '@/components/layout/AppShell';
+import { StudentCardGridSkeleton } from '@/components/layout/StudentListSkeletons';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useAttendanceSessions } from '@/features/attendance/hooks/useAttendanceSessions';
 import { attendanceService } from '@/features/attendance/services/attendanceService';
@@ -50,7 +51,7 @@ const stateStyle: Record<string, { color: string; light: string; label: string }
 };
 
 export default function StudentOnlineClassesPage() {
-  const { data: sessions = [], refetch } = useAttendanceSessions();
+  const { data: sessions = [], isLoading, refetch } = useAttendanceSessions();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
@@ -84,7 +85,7 @@ export default function StudentOnlineClassesPage() {
         const rightTime = new Date(right.created_at ?? right.scheduled_at).getTime();
         return sortOrder === 'newest' ? rightTime - leftTime : leftTime - rightTime;
       });
-  }, [onlineSessions, query, sortOrder, statusFilter]);
+  }, [onlineSessions, query, sortOrder, statusFilter, sectionFilter]);
 
   const counts = useMemo(() => {
     const c = { live: 0, upcoming: 0, ended: 0 };
@@ -171,7 +172,9 @@ export default function StudentOnlineClassesPage() {
         </div>
 
         {/* ── Cards ── */}
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <StudentCardGridSkeleton count={6} />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
             <Video className="h-8 w-8 opacity-30" />

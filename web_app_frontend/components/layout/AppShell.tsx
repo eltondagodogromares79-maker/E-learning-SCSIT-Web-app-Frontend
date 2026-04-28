@@ -21,10 +21,15 @@ interface AppShellProps {
 
 export default function AppShell({ title, subtitle, navItems, children, requiredRole, minimal }: AppShellProps) {
   const [isOpen, setIsOpen] = React.useState(true);
+  const [hasMounted, setHasMounted] = React.useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout, isInitializing } = useAuth();
+  const { user, logout, isInitializing, hasHydrated } = useAuth();
   const isStudent = user?.role === 'student';
+
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
   const filteredNavItems = React.useMemo(() => {
     if (!user) return navItems;
     if (user.role !== 'adviser') {
@@ -33,10 +38,17 @@ export default function AppShell({ title, subtitle, navItems, children, required
     return navItems;
   }, [navItems, user]);
 
+  const loginHref = React.useMemo(() => {
+    const nextPath = pathname && pathname.startsWith('/') ? pathname : '/dashboard';
+    return `/login?next=${encodeURIComponent(nextPath)}`;
+  }, [pathname]);
+
   React.useEffect(() => {
+    if (!hasMounted) return;
+    if (!hasHydrated) return;
     if (isInitializing) return;
     if (!user) {
-      router.replace('/login');
+      router.replace(loginHref);
       return;
     }
     if (user.must_change_password) {
@@ -62,7 +74,7 @@ export default function AppShell({ title, subtitle, navItems, children, required
       };
       router.replace(roleRoutes[user.role]);
     }
-  }, [isInitializing, pathname, requiredRole, router, user]);
+  }, [hasHydrated, hasMounted, isInitializing, loginHref, pathname, requiredRole, router, user]);
 
   const handleLogout = React.useCallback(async () => {
     await logout();

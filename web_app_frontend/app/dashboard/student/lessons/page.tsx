@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
+import { StudentCardGridSkeleton } from '@/components/layout/StudentListSkeletons';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useLessons } from '@/features/lessons/hooks/useLessons';
 import { useSubjects } from '@/features/subjects/hooks/useSubjects';
@@ -29,17 +30,18 @@ const FILTERS: { value: TypeFilter; label: string; icon?: React.ReactNode }[] = 
 ];
 
 export default function StudentLessonsPage() {
-  const { data: lessons = [] } = useLessons();
-  const { data: subjects = [] } = useSubjects();
+  const { data: lessons = [], isLoading: lessonsLoading } = useLessons();
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
 
   const subjectLookup = Object.fromEntries(subjects.map((s) => [s.id, s.name]));
   const toggleFavorite = useToggleFavorite();
-  const { data: favorites = [] } = useFavoriteLessons();
+  const { data: favorites = [], isLoading: favoritesLoading } = useFavoriteLessons();
   const favoriteIds = useMemo(() => new Set(favorites.map((f) => f.id)), [favorites]);
   const [sectionFilter, setSectionFilter] = useState('');
+  const pageLoading = lessonsLoading || subjectsLoading || favoritesLoading;
 
   const sections = useMemo(() => {
     const names = new Set(lessons.map((l) => l.subject_name ?? subjectLookup[l.subject_id] ?? '').filter(Boolean));
@@ -138,7 +140,9 @@ export default function StudentLessonsPage() {
         </div>
 
         {/* ── Cards ── */}
-        {filteredLessons.length === 0 ? (
+        {pageLoading ? (
+          <StudentCardGridSkeleton count={6} />
+        ) : filteredLessons.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
             <BookOpen className="h-8 w-8 opacity-30" />

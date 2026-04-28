@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherStudentRowsSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -13,6 +13,7 @@ import { useAssignments } from '@/features/assignments/hooks/useAssignments';
 import { useAssignmentSubmissions } from '@/features/assignments/hooks/useAssignmentSubmissions';
 import { useAiGradeSubmission } from '@/features/assignments/hooks/useAiGradeSubmission';
 import { useGradeSubmission } from '@/features/assignments/hooks/useGradeSubmission';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import { ClipboardList, Calendar, Star, Search, Trophy } from 'lucide-react';
 
 type DraftMap = Record<string, { score: string; feedback: string }>;
@@ -33,10 +34,11 @@ export default function TeacherAssignmentDetailPage() {
     return Array.isArray(raw) ? raw[0] : raw;
   }, [params]);
 
-  const { data: assignments = [] } = useAssignments();
-  const { data: submissions = [] } = useAssignmentSubmissions();
+  const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments();
+  const { data: submissions = [], isLoading: submissionsLoading } = useAssignmentSubmissions();
   const aiGrade = useAiGradeSubmission();
   const manualGrade = useGradeSubmission();
+  const showSubmissionSkeleton = useReliableSkeleton(assignmentsLoading || submissionsLoading);
 
   const assignment = assignments.find((item) => item.id === assignmentId);
   const filteredSubmissions = submissions.filter((item) => item.assignment_id === assignmentId);
@@ -62,10 +64,10 @@ export default function TeacherAssignmentDetailPage() {
 
   const loweredSearch = submissionSearch.trim().toLowerCase();
   const gradedSubmissions = filteredSubmissions.filter((s) => s.score !== undefined && s.score !== null);
-  const topRankings = useMemo(
-    () => [...gradedSubmissions].filter((s) => typeof s.score === 'number').sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 5),
-    [gradedSubmissions]
-  );
+  const topRankings = [...gradedSubmissions]
+    .filter((s) => typeof s.score === 'number')
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .slice(0, 5);
 
   const filteredByScore =
     submissionFilter === 'graded' ? gradedSubmissions
@@ -83,10 +85,7 @@ export default function TeacherAssignmentDetailPage() {
     ? filteredByTime.filter((s) => `${s.student_name ?? ''} ${s.student_id ?? ''}`.toLowerCase().includes(loweredSearch))
     : filteredByTime;
 
-  const activeSubmission = useMemo(
-    () => filteredSubmissions.find((s) => s.id === reviewSubmissionId) ?? null,
-    [filteredSubmissions, reviewSubmissionId]
-  );
+  const activeSubmission = filteredSubmissions.find((s) => s.id === reviewSubmissionId) ?? null;
 
   const statCards = [
     { label: 'Total', value: filteredSubmissions.length, icon: '📋', color: 'text-[var(--brand-blue-deep)]', bg: 'from-blue-50 to-white border-blue-100' },
@@ -99,7 +98,9 @@ export default function TeacherAssignmentDetailPage() {
     <AppShell title="Teacher Dashboard" subtitle="Assignment" navItems={teacherNav} requiredRole="teacher">
       <div className="space-y-6">
 
-        {!assignment ? (
+        {showSubmissionSkeleton ? (
+          <TeacherStudentRowsSkeleton count={4} />
+        ) : !assignment ? (
           <div className="rounded-2xl border border-dashed border-neutral-200 p-10 text-center text-sm text-neutral-400">Assignment not found.</div>
         ) : (
           <>
@@ -174,7 +175,9 @@ export default function TeacherAssignmentDetailPage() {
                   <span className="ml-auto text-xs text-neutral-400">{searchedSubmissions.length} result{searchedSubmissions.length !== 1 ? 's' : ''}</span>
                 </div>
 
-                {searchedSubmissions.length === 0 ? (
+                {showSubmissionSkeleton ? (
+                  <TeacherStudentRowsSkeleton count={4} />
+                ) : searchedSubmissions.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-neutral-200 p-10 text-center text-sm text-neutral-400">
                     {loweredSearch ? 'No matches.' : 'No submissions yet.'}
                   </div>

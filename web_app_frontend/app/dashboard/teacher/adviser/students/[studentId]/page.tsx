@@ -2,18 +2,21 @@
 
 import { useParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherDetailSectionsSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useStudentPerformanceDetail } from '@/features/dashboard/hooks/useStudentPerformanceDetail';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import Link from 'next/link';
 
 export default function AdviserStudentDetailPage() {
   const params = useParams();
   const studentId = params.studentId as string;
   const { data, isLoading } = useStudentPerformanceDetail(studentId);
+  const showDetailSkeleton = useReliableSkeleton(isLoading);
 
   return (
     <AppShell title="Teacher Dashboard" subtitle="Student record" navItems={teacherNav} requiredRole="teacher">
@@ -28,10 +31,8 @@ export default function AdviserStudentDetailPage() {
           }
         />
 
-        {isLoading ? (
-          <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">
-            Loading student record…
-          </div>
+        {showDetailSkeleton ? (
+          <TeacherDetailSectionsSkeleton />
         ) : !data ? (
           <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">
             Student record not available.
@@ -114,4 +115,3 @@ export default function AdviserStudentDetailPage() {
     </AppShell>
   );
 }
-

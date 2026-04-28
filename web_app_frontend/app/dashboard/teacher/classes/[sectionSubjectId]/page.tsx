@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton, TeacherStudentRowsSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,7 +38,7 @@ import { useDeleteAttendanceSession } from '@/features/attendance/hooks/useDelet
 import { useToast } from '@/components/ui/toast';
 import { env } from '@/lib/env';
 import { useConfirm } from '@/components/ui/confirm';
-import type { QuizProctorLog } from '@/types';
+import type { AttendanceStatus, QuizProctorLog } from '@/types';
 import { useStudentPerformance } from '@/features/dashboard/hooks/useStudentPerformance';
 import { useCreateLesson } from '@/features/lessons/hooks/useCreateLesson';
 import { useAiGenerateLesson } from '@/features/lessons/hooks/useAiGenerateLesson';
@@ -52,7 +53,7 @@ import { useAiSaveQuiz } from '@/features/quizzes/hooks/useAiSaveQuiz';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLesson } from '@/features/lessons/hooks/useLesson';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Calendar, BookOpen, ExternalLink, ArrowLeft, ClipboardList, Search, Trophy, Star, Video, Clock, Users, Play, Square, Pencil, Trash2 } from 'lucide-react';
+import { FileText, Calendar, BookOpen, ExternalLink, ArrowLeft, ClipboardList, Search, Trophy, Star, Video, Clock, Users, Play, Square, Pencil, Trash2, CalendarClock, ClipboardCheck, MonitorPlay, Save } from 'lucide-react';
 
 type TabKey = 'students' | 'lessons' | 'assignments' | 'quizzes' | 'attendance';
 
@@ -78,6 +79,14 @@ const isPastDateOnly = (value?: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return date.getTime() < today.getTime();
+};
+
+const attendanceStatusOptions: AttendanceStatus[] = ['present', 'late', 'excused', 'absent'];
+const attendanceStatusStyles: Record<AttendanceStatus, string> = {
+  present: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  absent: 'border-rose-200 bg-rose-50 text-rose-700',
+  late: 'border-amber-200 bg-amber-50 text-amber-700',
+  excused: 'border-slate-200 bg-slate-50 text-slate-700',
 };
 
 function studentInitials(name: string) {
@@ -813,7 +822,7 @@ function StudentsTab({ sectionSubjectId }: { sectionSubjectId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (isLoading) {
-    return <div className="py-8 text-center text-sm text-neutral-400">Loading students…</div>;
+    return <TeacherStudentRowsSkeleton />;
   }
   if (students.length === 0) {
     return <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">No students enrolled yet.</div>;
@@ -1065,7 +1074,7 @@ function QuizAttemptsPanel({ quizId }: { quizId: string }) {
           {activeLogStudentId === attempt.student_id ? (
             <div className="mt-4 rounded-xl border border-neutral-200 bg-[var(--surface-2)] p-3 text-xs text-neutral-600">
               {isLoadingLogs ? (
-                <div>Loading logs…</div>
+                <TeacherCardGridSkeleton count={2} columnsClass="" />
               ) : proctorLogs.length === 0 ? (
                 <div>No proctor logs found.</div>
               ) : (
@@ -1152,6 +1161,9 @@ export default function TeacherClassDetailPage() {
   const [attendanceDateTime, setAttendanceDateTime] = useState('');
   const [attendanceOnline, setAttendanceOnline] = useState(false);
   const [activeAttendanceSessionId, setActiveAttendanceSessionId] = useState('');
+  const [attendanceSearch, setAttendanceSearch] = useState('');
+  const [attendanceStatusFilter, setAttendanceStatusFilter] = useState<AttendanceStatus | 'all'>('all');
+  const [attendanceNotes, setAttendanceNotes] = useState<Record<string, string>>({});
   const [creatingTab, setCreatingTab] = useState<TabKey | null>(null);
   const [viewingLessonId, setViewingLessonId] = useState('');
   const [viewingAssignmentId, setViewingAssignmentId] = useState('');
@@ -1284,6 +1296,24 @@ export default function TeacherClassDetailPage() {
     });
     return counts;
   }, [attendanceRecords]);
+
+  const filteredAttendanceRecords = useMemo(() => {
+    const trimmed = attendanceSearch.trim().toLowerCase();
+    return attendanceRecords.filter((record) => {
+      const matchesStatus = attendanceStatusFilter === 'all' || record.status === attendanceStatusFilter;
+      if (!trimmed) return matchesStatus;
+      const haystack = [
+        record.student_name,
+        record.student_number,
+        record.student,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return matchesStatus && haystack.includes(trimmed);
+    });
+  }, [attendanceRecords, attendanceSearch, attendanceStatusFilter]);
+  const attendanceAttended = attendanceCounts.present + attendanceCounts.late + attendanceCounts.excused;
 
   const startEditLesson = (id: string, title: string, description?: string) => {
     setEditingLessonId(id);
@@ -2108,7 +2138,175 @@ export default function TeacherClassDetailPage() {
                 </div>
               ) : (
                 <>
-                  {attendanceSessions.length === 0 ? (
+                  {activeAttendanceSessionId && activeSession ? (
+                    <div className="space-y-8">
+                      <div className="relative overflow-hidden rounded-3xl p-8 lg:p-10" style={{ background: 'var(--brand-blue)' }}>
+                        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white opacity-10" />
+                        <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white opacity-5" />
+                        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="space-y-3">
+                            <Button
+                              variant="secondary"
+                              className="w-fit gap-2"
+                              onClick={() => {
+                                setActiveAttendanceSessionId('');
+                                setAttendanceSearch('');
+                                setAttendanceStatusFilter('all');
+                              }}
+                            >
+                              <ArrowLeft className="h-4 w-4" />
+                              Back to sessions
+                            </Button>
+                            <div>
+                              <div className="mb-2 flex items-center gap-2">
+                                <CalendarClock className="h-5 w-5 text-white/70" />
+                                <span className="text-sm font-semibold uppercase tracking-widest text-white/60">Session Details</span>
+                              </div>
+                              <h2 className="text-3xl font-bold text-white lg:text-4xl">
+                                {activeSession.title || 'Attendance session'}
+                              </h2>
+                              <p className="mt-2 text-sm text-white/70">
+                                {sectionSubject?.subject_name ?? 'Class'}
+                                {sectionSubject?.section_name ? ` • ${sectionSubject.section_name}` : ''}
+                                {' • '}
+                                {new Date(activeSession.scheduled_at).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-4">
+                            {[
+                              { label: 'Total', value: activeSession.total_count ?? attendanceRecords.length, icon: <Users className="h-4 w-4" /> },
+                              { label: 'Attended', value: attendanceAttended, icon: <ClipboardCheck className="h-4 w-4" /> },
+                              { label: 'Present', value: attendanceCounts.present, icon: <ClipboardCheck className="h-4 w-4" /> },
+                              { label: activeSession.is_online_class ? 'Online' : 'In Person', value: activeSession.is_live ? 'Live' : activeSession.ended_at ? 'Ended' : 'Ready', icon: <MonitorPlay className="h-4 w-4" /> },
+                            ].map((item) => (
+                              <div key={item.label} className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+                                <div className="flex items-center gap-2 text-white/60">{item.icon}</div>
+                                <div className="mt-3 text-lg font-bold text-white">{item.value}</div>
+                                <div className="text-[10px] font-semibold uppercase tracking-widest text-white/50">{item.label}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Card className="border shadow-sm" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+                        <CardHeader>
+                          <CardTitle>Student List</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <Input
+                              placeholder="Search student"
+                              className="lg:w-80"
+                              value={attendanceSearch}
+                              onChange={(e) => setAttendanceSearch(e.target.value)}
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              {(['all', ...attendanceStatusOptions] as Array<'all' | AttendanceStatus>).map((status) => (
+                                <button
+                                  key={status}
+                                  type="button"
+                                  onClick={() => setAttendanceStatusFilter(status)}
+                                  className={`rounded-full border px-3 py-1 text-[11px] capitalize transition ${
+                                    attendanceStatusFilter === status
+                                      ? 'border-[var(--brand-blue)] bg-[rgba(37,99,235,0.12)] text-[var(--brand-blue-deep)]'
+                                      : 'border-[rgba(15,23,42,0.12)] text-neutral-500 hover:bg-[var(--surface-2)]'
+                                  }`}
+                                >
+                                  {status}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs text-neutral-600 lg:grid-cols-4">
+                            <div className={`rounded-xl border p-3 ${attendanceStatusStyles.present}`}>Present: {attendanceCounts.present}</div>
+                            <div className={`rounded-xl border p-3 ${attendanceStatusStyles.late}`}>Late: {attendanceCounts.late}</div>
+                            <div className={`rounded-xl border p-3 ${attendanceStatusStyles.excused}`}>Excused: {attendanceCounts.excused}</div>
+                            <div className={`rounded-xl border p-3 ${attendanceStatusStyles.absent}`}>Absent: {attendanceCounts.absent}</div>
+                          </div>
+
+                          {filteredAttendanceRecords.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-[rgba(15,23,42,0.18)] bg-[var(--surface-2)] p-8 text-center text-sm text-neutral-500">
+                              No students match the current filters.
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {filteredAttendanceRecords.map((record) => (
+                                <div key={record.id} className="rounded-2xl border border-[rgba(15,23,42,0.12)] bg-white p-4 shadow-sm">
+                                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                    <div className="min-w-0 lg:w-64">
+                                      <div className="text-sm font-semibold text-neutral-900">{record.student_name ?? 'Student'}</div>
+                                      <div className="text-xs text-neutral-500">{record.student_number ?? record.student}</div>
+                                      <div className={`mt-3 inline-flex rounded-full border px-3 py-1 text-[11px] capitalize ${attendanceStatusStyles[record.status]}`}>
+                                        {record.status}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex-1 space-y-3">
+                                      <div className="flex flex-wrap gap-2">
+                                        {attendanceStatusOptions.map((status) => (
+                                          <button
+                                            key={status}
+                                            type="button"
+                                            onClick={() => markAttendance.mutate([{ id: record.id, status, note: attendanceNotes[record.id] ?? record.note ?? '' }])}
+                                            className={`rounded-full border px-3 py-1 text-[11px] capitalize transition ${
+                                              record.status === status
+                                                ? 'border-[var(--brand-blue)] bg-[rgba(37,99,235,0.12)] text-[var(--brand-blue-deep)]'
+                                                : 'border-[rgba(15,23,42,0.12)] text-neutral-500 hover:bg-[var(--surface-2)]'
+                                            }`}
+                                          >
+                                            {status}
+                                          </button>
+                                        ))}
+                                      </div>
+
+                                      <div className="grid gap-3 lg:grid-cols-[1fr,auto]">
+                                        <Input
+                                          value={attendanceNotes[record.id] ?? record.note ?? ''}
+                                          onChange={(e) =>
+                                            setAttendanceNotes((prev) => ({
+                                              ...prev,
+                                              [record.id]: e.target.value,
+                                            }))
+                                          }
+                                          placeholder="Add reason or note for this student"
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          className="gap-2"
+                                          disabled={markAttendance.isPending}
+                                          onClick={() =>
+                                            markAttendance.mutate([
+                                              {
+                                                id: record.id,
+                                                status: record.status,
+                                                note: attendanceNotes[record.id] ?? record.note ?? '',
+                                              },
+                                            ])
+                                          }
+                                        >
+                                          <Save className="h-4 w-4" />
+                                          Save reason
+                                        </Button>
+                                      </div>
+
+                                      {record.marked_at ? (
+                                        <div className="text-xs text-neutral-400">
+                                          Updated {new Date(record.marked_at).toLocaleString()}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ) : attendanceSessions.length === 0 ? (
                     <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-neutral-200 p-12 text-center">
                       <Video className="h-8 w-8 text-neutral-300" />
                       <p className="text-sm text-neutral-500">No class sessions yet.</p>
@@ -2142,6 +2340,9 @@ export default function TeacherClassDetailPage() {
                                 {session.is_online_class && <span className="flex items-center gap-1"><Video className="h-3.5 w-3.5" />Online</span>}
                               </div>
                               <div className="mt-auto flex flex-wrap gap-2">
+                                <Button size="sm" variant="outline" onClick={() => setActiveAttendanceSessionId(session.id)}>
+                                  Open student list
+                                </Button>
                                 <Button size="sm" disabled={startAttendanceSession.isPending || Boolean(session.ended_at) || session.is_live}
                                   style={state === 'upcoming' ? { background: 'var(--brand-blue)', color: '#fff' } : {}}
                                   onClick={async () => {

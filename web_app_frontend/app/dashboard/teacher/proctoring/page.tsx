@@ -3,19 +3,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherRowsSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useQuizzes } from '@/features/quizzes/hooks/useQuizzes';
 import { quizService } from '@/features/quizzes/services/quizService';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import type { QuizProctorSummary } from '@/types';
 import { ShieldCheck, AlertTriangle, XCircle, Camera, Search } from 'lucide-react';
 
 export default function TeacherProctoringPage() {
-  const { data: quizzes = [] } = useQuizzes();
+  const { data: quizzes = [], isLoading: quizzesLoading } = useQuizzes();
   const [query, setQuery] = useState('');
   const [summary, setSummary] = useState<QuizProctorSummary[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const showListSkeleton = useReliableSkeleton(quizzesLoading || summaryLoading);
 
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
@@ -31,7 +35,8 @@ export default function TeacherProctoringPage() {
     quizService
       .getProctorSummary()
       .then((data) => { if (mounted) setSummary(data ?? []); })
-      .catch(() => { if (mounted) setSummary([]); });
+      .catch(() => { if (mounted) setSummary([]); })
+      .finally(() => { if (mounted) setSummaryLoading(false); });
     return () => { mounted = false; };
   }, []);
 
@@ -100,7 +105,9 @@ export default function TeacherProctoringPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {filtered.length === 0 ? (
+            {showListSkeleton ? (
+              <TeacherRowsSkeleton count={5} />
+            ) : filtered.length === 0 ? (
               <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
                 No quizzes found.
               </div>

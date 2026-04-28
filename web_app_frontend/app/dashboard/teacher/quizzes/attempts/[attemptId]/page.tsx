@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -318,7 +319,7 @@ export default function QuizAttemptReviewPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {loading ? (
-              <div className="text-sm text-neutral-500">Loading answers…</div>
+              <TeacherCardGridSkeleton count={4} columnsClass="" />
             ) : reviewItems.length ? (
               reviewItems.map(({ question, answer }) => {
                 const questionType = question.question_type ?? 'essay';

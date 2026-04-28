@@ -3,18 +3,21 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherGroupedListSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { teacherNav } from '@/components/navigation/nav-config';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { School, Users, BookCopy, ClipboardList, HelpCircle, Search } from 'lucide-react';
 
 const CARD_COLORS = ['#0891b2', '#7c3aed', '#059669', '#d97706', '#dc2626', '#0D1282'];
 
 export default function TeacherClassesPage() {
-  const { data: sectionSubjects = [] } = useSectionSubjects();
+  const { data: sectionSubjects = [], isLoading } = useSectionSubjects();
   const [query, setQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
+  const showListSkeleton = useReliableSkeleton(isLoading);
 
   const sections = useMemo(() => {
     const unique = new Set(sectionSubjects.map((i) => i.section_name || 'Unassigned'));
@@ -100,7 +103,9 @@ export default function TeacherClassesPage() {
         </Card>
 
         {/* ── Classes ── */}
-        {filtered.length === 0 ? (
+        {showListSkeleton ? (
+          <TeacherGroupedListSkeleton />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-neutral-200 p-16 text-center text-neutral-400">
             <School className="h-8 w-8 opacity-30" />
             <p className="text-sm">{sectionSubjects.length === 0 ? 'No classes assigned yet.' : 'No results match your search.'}</p>

@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,11 +19,12 @@ import { useAiSaveQuiz } from '@/features/quizzes/hooks/useAiSaveQuiz';
 import { useUpdateQuiz } from '@/features/quizzes/hooks/useUpdateQuiz';
 import { useDeleteQuiz } from '@/features/quizzes/hooks/useDeleteQuiz';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm';
 
 function TeacherQuizzesPageInner() {
-  const { data: quizzes = [] } = useQuizzes();
+  const { data: quizzes = [], isLoading: quizzesLoading } = useQuizzes();
   const { data: sectionSubjects = [] } = useSectionSubjects();
   const createQuiz = useCreateQuiz();
   const aiGenerateQuiz = useAiGenerateQuiz();
@@ -32,9 +34,10 @@ function TeacherQuizzesPageInner() {
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const confirm = useConfirm();
+  const showQuizzesSkeleton = useReliableSkeleton(quizzesLoading);
 
   const [createMode, setCreateMode] = useState<'ai' | 'manual'>('manual');
-  const [sectionSubjectId, setSectionSubjectId] = useState('');
+  const [sectionSubjectId, setSectionSubjectId] = useState(() => searchParams.get('sectionSubjectId') ?? '');
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiDueDate, setAiDueDate] = useState('');
   const [aiTimeLimit, setAiTimeLimit] = useState('');
@@ -47,7 +50,7 @@ function TeacherQuizzesPageInner() {
   const [aiDraftAiGrade, setAiDraftAiGrade] = useState(true);
   const [aiSecurityLevel, setAiSecurityLevel] = useState<'normal' | 'strict'>('strict');
   const [aiDraftSecurityLevel, setAiDraftSecurityLevel] = useState<'normal' | 'strict'>('strict');
-  const [aiDraftQuestions, setAiDraftQuestions] = useState<Array<Record<string, any>>>([]);
+  const [aiDraftQuestions, setAiDraftQuestions] = useState<Array<Record<string, unknown>>>([]);
   const [aiPreviewOpen, setAiPreviewOpen] = useState(false);
   const [aiIsAvailable, setAiIsAvailable] = useState(false);
   const [aiDraftIsAvailable, setAiDraftIsAvailable] = useState(false);
@@ -71,14 +74,6 @@ function TeacherQuizzesPageInner() {
   const [editAiGrade, setEditAiGrade] = useState(true);
   const [editSecurityLevel, setEditSecurityLevel] = useState<'normal' | 'strict'>('strict');
   const [editIsAvailable, setEditIsAvailable] = useState(false);
-
-  useEffect(() => {
-    if (sectionSubjectId) return;
-    const fromUrl = searchParams.get('sectionSubjectId');
-    if (fromUrl) {
-      setSectionSubjectId(fromUrl);
-    }
-  }, [searchParams, sectionSubjectId]);
 
   const toIso = (value: string) => {
     if (!value) return '';
@@ -578,7 +573,9 @@ function TeacherQuizzesPageInner() {
             <CardTitle>Recent quizzes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {quizzes.length === 0 ? (
+            {showQuizzesSkeleton ? (
+              <TeacherCardGridSkeleton count={3} columnsClass="" />
+            ) : quizzes.length === 0 ? (
               <div className="text-sm text-neutral-500">No quizzes yet.</div>
             ) : (
               quizzes.slice(0, 6).map((quiz) => (

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AppShell from '@/components/layout/AppShell';
+import { StudentCardGridSkeleton } from '@/components/layout/StudentListSkeletons';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useAttendanceSessions } from '@/features/attendance/hooks/useAttendanceSessions';
 import type { AttendanceSession } from '@/types';
@@ -38,7 +39,7 @@ function buildTitle(session: AttendanceSession) {
 }
 
 export default function StudentAttendancePage() {
-  const { data: sessions = [] } = useAttendanceSessions();
+  const { data: sessions = [], isLoading } = useAttendanceSessions();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
@@ -124,7 +125,9 @@ export default function StudentAttendancePage() {
         </div>
 
         {/* ── Cards ── */}
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <StudentCardGridSkeleton count={6} />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
             <CalendarCheck className="h-8 w-8 opacity-30" />

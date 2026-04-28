@@ -3,6 +3,7 @@
 import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { StudentRowsSkeleton } from '@/components/layout/StudentListSkeletons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import Link from 'next/link';
 function StudentQuizAttemptsPageInner() {
   const searchParams = useSearchParams();
   const filterQuizId = searchParams.get('quizId') ?? '';
-  const { data: attempts = [] } = useQuizAttempts();
+  const { data: attempts = [], isLoading } = useQuizAttempts();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -42,7 +43,9 @@ function StudentQuizAttemptsPageInner() {
             />
           </CardHeader>
           <CardContent className="space-y-3">
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <StudentRowsSkeleton count={5} />
+            ) : filtered.length === 0 ? (
               <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-sm text-neutral-500">
                 No attempts yet.
               </div>

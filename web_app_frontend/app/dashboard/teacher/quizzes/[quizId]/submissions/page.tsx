@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherStudentRowsSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { teacherNav } from '@/components/navigation/nav-config';
 import { useQuizAttempts } from '@/features/quizzes/hooks/useQuizAttempts';
 import { useQuiz } from '@/features/quizzes/hooks/useQuiz';
 import { quizService } from '@/features/quizzes/services/quizService';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import { HelpCircle, Search, Trophy, Clock, Camera, FileText, Settings } from 'lucide-react';
 
 function initials(name: string) {
@@ -25,13 +27,14 @@ function avatarColor(name: string) {
 export default function TeacherQuizSubmissionsPage() {
   const params = useParams();
   const quizId = params.quizId as string;
-  const { data: quiz } = useQuiz(quizId);
-  const { data: attempts = [] } = useQuizAttempts(quizId);
+  const { data: quiz, isLoading: quizLoading } = useQuiz(quizId);
+  const { data: attempts = [], isLoading: attemptsLoading } = useQuizAttempts(quizId);
   const [query, setQuery] = useState('');
   const [photoOpen, setPhotoOpen] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [photoStudent, setPhotoStudent] = useState('');
   const [photoItems, setPhotoItems] = useState<Array<{ id: string; image_url: string; reason?: string | null; created_at: string }>>([]);
+  const showAttemptSkeleton = useReliableSkeleton(quizLoading || attemptsLoading);
 
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
@@ -130,7 +133,9 @@ export default function TeacherQuizSubmissionsPage() {
               />
             </div>
 
-            {filtered.length === 0 ? (
+            {showAttemptSkeleton ? (
+              <TeacherStudentRowsSkeleton count={4} />
+            ) : filtered.length === 0 ? (
               <div className="rounded-xl border border-dashed border-neutral-200 p-10 text-center text-sm text-neutral-400">
                 No submissions yet.
               </div>

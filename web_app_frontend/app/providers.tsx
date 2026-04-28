@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ToastProvider } from '@/components/ui/toast';
 import { ConfirmProvider } from '@/components/ui/confirm';
 import { GlobalSpinner } from '@/components/feedback/GlobalSpinner';
+import { ChatPresenceProvider } from '@/features/chat/context/ChatPresenceContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -21,8 +22,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       <ToastProvider>
         <ConfirmProvider>
-          <GlobalSpinner />
-          {children}
+          <ChatPresenceProvider>
+            <GlobalSpinner />
+            {children}
+          </ChatPresenceProvider>
         </ConfirmProvider>
       </ToastProvider>
     </QueryClientProvider>

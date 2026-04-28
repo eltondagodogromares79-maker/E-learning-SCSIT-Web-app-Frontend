@@ -4,6 +4,7 @@ import { Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { StudentRowsSkeleton } from '@/components/layout/StudentListSkeletons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { studentNav } from '@/components/navigation/nav-config';
@@ -20,10 +21,11 @@ function useQuery() {
 function StudentSearchPageInner() {
   const query = useQuery();
   const normalized = query.trim().toLowerCase();
-  const { data: subjects = [] } = useSubjects();
-  const { data: lessons = [] } = useLessons();
-  const { data: assignments = [] } = useAssignments();
-  const { data: quizzes = [] } = useQuizzes();
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects();
+  const { data: lessons = [], isLoading: lessonsLoading } = useLessons();
+  const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments();
+  const { data: quizzes = [], isLoading: quizzesLoading } = useQuizzes();
+  const pageLoading = subjectsLoading || lessonsLoading || assignmentsLoading || quizzesLoading;
 
   const filteredSubjects = useMemo(
     () =>
@@ -73,7 +75,9 @@ function StudentSearchPageInner() {
               <CardTitle>Subjects</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredSubjects.length === 0 ? (
+              {pageLoading ? (
+                <StudentRowsSkeleton count={4} />
+              ) : filteredSubjects.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching subjects.</div>
               ) : (
                 filteredSubjects.map((subject) => (
@@ -91,7 +95,9 @@ function StudentSearchPageInner() {
           <CardTitle>Learning materials</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredLessons.length === 0 ? (
+              {pageLoading ? (
+                <StudentRowsSkeleton count={4} />
+              ) : filteredLessons.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching learning materials.</div>
               ) : (
                 filteredLessons.map((lesson) => (
@@ -111,7 +117,9 @@ function StudentSearchPageInner() {
               <CardTitle>Assignments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredAssignments.length === 0 ? (
+              {pageLoading ? (
+                <StudentRowsSkeleton count={4} />
+              ) : filteredAssignments.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching assignments.</div>
               ) : (
                 filteredAssignments.map((assignment) => (
@@ -133,7 +141,9 @@ function StudentSearchPageInner() {
               <CardTitle>Quizzes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredQuizzes.length === 0 ? (
+              {pageLoading ? (
+                <StudentRowsSkeleton count={4} />
+              ) : filteredQuizzes.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching quizzes.</div>
               ) : (
                 filteredQuizzes.map((quiz) => (

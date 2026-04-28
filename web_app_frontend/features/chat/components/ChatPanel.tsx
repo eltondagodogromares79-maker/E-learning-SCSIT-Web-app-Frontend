@@ -16,8 +16,15 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, MoreVertical, Search, User } from 'lucide-react';
 import { useChatContext } from '@/features/chat/hooks/useChatContext';
 import { useChatContacts } from '@/features/chat/hooks/useChatContacts';
+import { useChatPresence } from '@/features/chat/context/ChatPresenceContext';
 import { chatService } from '@/features/chat/services/chatService';
+import {
+  ChatMessagesSkeleton,
+  ChatPanelSkeleton,
+  ChatRoomListSkeleton,
+} from '@/features/chat/components/ChatPanelSkeleton';
 import { useToast } from '@/components/ui/toast';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import type { ChatContact, ChatMessage, ChatReadReceipt } from '@/types';
 import { env } from '@/lib/env';
 
@@ -98,9 +105,31 @@ const sameRoomList = (left: Room[], right: Room[]) => {
   });
 };
 
+const formatLastActive = (timestamp?: number | null) => {
+  if (!timestamp) return 'Offline';
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (seconds < 45) return 'Last active just now';
+  if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    return `Last active ${minutes}m ago`;
+  }
+  if (seconds < 86400) {
+    const hours = Math.floor(seconds / 3600);
+    return `Last active ${hours}h ago`;
+  }
+  const days = Math.floor(seconds / 86400);
+  return `Last active ${days}d ago`;
+};
+
+const safeLookup = <T,>(value: Record<string, T> | null | undefined, key: string | null | undefined) => {
+  if (!value || !key) return undefined;
+  return value[key];
+};
+
 export function ChatPanel() {
-  const { data: chatContext } = useChatContext();
-  const { data: contacts = [] } = useChatContacts();
+  const { data: chatContext, isLoading: chatContextLoading } = useChatContext();
+  const { data: contacts = [], isLoading: contactsLoading } = useChatContacts();
+  const { onlineUsers: globalOnlineUsers } = useChatPresence();
   const { showToast } = useToast();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [hiddenRooms, setHiddenRooms] = useState<Set<string>>(new Set());
@@ -109,6 +138,8 @@ export function ChatPanel() {
   const [readReceipts, setReadReceipts] = useState<Record<string, ChatReadReceipt[]>>({});
   const [unreadByRoom, setUnreadByRoom] = useState<Record<string, number>>({});
   const [typingByRoom, setTypingByRoom] = useState<Record<string, Set<string>>>({});
+  const [localOnlineUsers, setLocalOnlineUsers] = useState<Set<string>>(new Set());
+  const [lastSeenByUser, setLastSeenByUser] = useState<Record<string, number>>({});
   const [messageInput, setMessageInput] = useState('');
   const [groupName, setGroupName] = useState('');
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -126,7 +157,6 @@ export function ChatPanel() {
   const [allUsers, setAllUsers] = useState<Room[]>([]);
   const [allUsersData, setAllUsersData] = useState<ChatContact[]>([]);
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [roomListLimit, setRoomListLimit] = useState(10);
   const [seenPopoverMessageId, setSeenPopoverMessageId] = useState<string | null>(null);
   const [roomPagination, setRoomPagination] = useState<
@@ -145,9 +175,11 @@ export function ChatPanel() {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [bubbleSwipeStart, setBubbleSwipeStart] = useState<number | null>(null);
+  const [hasMounted, setHasMounted] = useState(false);
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [wsToken, setWsToken] = useState<string>('');
   const [wsReady, setWsReady] = useState(false);
+  const [messageLoadingByRoom, setMessageLoadingByRoom] = useState<Record<string, boolean>>({});
   const socketRef = useRef<WebSocket | null>(null);
   const roomsRef = useRef<Room[]>([]);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -156,6 +188,11 @@ export function ChatPanel() {
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const loadingOlderRef = useRef(false);
   const groupMembersRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+  const onlineUsersRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -181,6 +218,12 @@ export function ChatPanel() {
   }, []);
 
   const apiOrigin = useMemo(() => env.API_BASE_URL.replace(/\/api\/?$/, ''), []);
+  const onlineUsers = useMemo(() => {
+    const merged = new Set<string>();
+    globalOnlineUsers.forEach((id) => merged.add(id));
+    localOnlineUsers.forEach((id) => merged.add(id));
+    return merged;
+  }, [globalOnlineUsers, localOnlineUsers]);
 
   const wsUrl = useMemo(() => {
     if (!wsBaseUrl) return '';
@@ -190,32 +233,36 @@ export function ChatPanel() {
   }, [wsBaseUrl, wsToken]);
 
   const userNameMap = useMemo(() => {
-    const map = new Map<string, string>();
+    const map: Record<string, string> = {};
     contacts.forEach((contact) => {
-      map.set(contact.id, contact.full_name);
+      map[contact.id] = contact.full_name;
     });
     if (chatContext?.id) {
-      map.set(chatContext.id, 'You');
+      map[chatContext.id] = 'You';
     }
     return map;
   }, [contacts, chatContext?.id]);
 
+  const showPanelSkeleton = useReliableSkeleton(chatContextLoading || contactsLoading || !hasMounted);
+
   const allUserNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    allUsersData.forEach((user) => map.set(user.id, user.full_name));
+    const map: Record<string, string> = {};
+    allUsersData.forEach((user) => {
+      map[user.id] = user.full_name;
+    });
     contacts.forEach((user) => {
-      if (!map.has(user.id)) {
-        map.set(user.id, user.full_name);
+      if (!map[user.id]) {
+        map[user.id] = user.full_name;
       }
     });
     if (chatContext?.id) {
-      map.set(chatContext.id, 'You');
+      map[chatContext.id] = 'You';
     }
     return map;
   }, [allUsersData, contacts, chatContext?.id]);
 
   const userAvatarMap = useMemo(() => {
-    const map = new Map<string, string | null>();
+    const map: Record<string, string | null> = {};
     const resolveAvatar = (value?: string | null) => {
       if (!value) return null;
       if (/^https?:\/\//i.test(value)) return value;
@@ -223,11 +270,11 @@ export function ChatPanel() {
       return `${apiOrigin}/${value}`;
     };
     contacts.forEach((contact) => {
-      map.set(contact.id, resolveAvatar(contact.profile_picture));
+      map[contact.id] = resolveAvatar(contact.profile_picture);
     });
     allUsersData.forEach((user) => {
-      if (!map.has(user.id)) {
-        map.set(user.id, resolveAvatar(user.profile_picture));
+      if (!(user.id in map)) {
+        map[user.id] = resolveAvatar(user.profile_picture);
       }
     });
     return map;
@@ -260,7 +307,7 @@ export function ChatPanel() {
               const a = parts[1];
               const b = parts[2];
               const targetId = chatContext.id === a ? b : a;
-              const label = userNameMap.get(targetId) ?? targetId.slice(0, 8);
+              const label = safeLookup(userNameMap, targetId) ?? targetId.slice(0, 8);
               next.push({ id: roomId, label, kind: 'direct', targetId });
             }
           } else if (roomId.startsWith('group:')) {
@@ -325,11 +372,17 @@ export function ChatPanel() {
 
     setRooms((prev) => {
       const merged = [...prev].filter((room) => room.kind !== 'section' && !room.id.startsWith('section:'));
-      [...directRooms].forEach((room) => {
+      directRooms.forEach((room) => {
         if (hiddenRooms.has(room.id)) return;
-        if (!merged.find((item) => item.id === room.id)) {
-          merged.push(room);
+        const existingIndex = merged.findIndex((item) => item.id === room.id);
+        if (existingIndex >= 0) {
+          merged[existingIndex] = {
+            ...merged[existingIndex],
+            ...room,
+          };
+          return;
         }
+        merged.push(room);
       });
       return sameRoomList(prev, merged) ? prev : merged;
     });
@@ -461,7 +514,23 @@ export function ChatPanel() {
       }
 
       if (payload.type === 'presence') {
-        setOnlineUsers(new Set(payload.user_ids.map((id) => String(id))));
+        const nextOnline = new Set(payload.user_ids.map((id) => String(id)));
+        const previousOnline = onlineUsersRef.current;
+        const now = Date.now();
+        setLastSeenByUser((prev) => {
+          const next = { ...prev };
+          previousOnline.forEach((id) => {
+            if (!nextOnline.has(id)) {
+              next[id] = now;
+            }
+          });
+          nextOnline.forEach((id) => {
+            delete next[id];
+          });
+          return next;
+        });
+        onlineUsersRef.current = nextOnline;
+        setLocalOnlineUsers(nextOnline);
         return;
       }
 
@@ -528,7 +597,7 @@ export function ChatPanel() {
               const a = parts[1];
               const b = parts[2];
               const targetId = currentUserId === a ? b : a;
-              const label = userNameMap.get(targetId) ?? targetId.slice(0, 8);
+              const label = safeLookup(userNameMap, targetId) ?? targetId.slice(0, 8);
               return [
                 ...prev,
                 { id: room, label, kind: 'direct', targetId },
@@ -666,6 +735,9 @@ export function ChatPanel() {
     return () => {
       isMounted = false;
       if (retryTimeout) clearTimeout(retryTimeout);
+      setStatus('disconnected');
+      setLocalOnlineUsers(new Set());
+      onlineUsersRef.current = new Set();
       const socket = socketRef.current;
       if (!socket) return;
       if (socket.readyState === WebSocket.OPEN) {
@@ -687,6 +759,7 @@ export function ChatPanel() {
 
   const loadRoomMessages = useCallback(
     async (roomId: string) => {
+      setMessageLoadingByRoom((prev) => ({ ...prev, [roomId]: true }));
       try {
         const socket = socketRef.current;
         if (socket && socket.readyState === WebSocket.OPEN) {
@@ -750,6 +823,8 @@ export function ChatPanel() {
         });
       } catch (error) {
         showToast({ title: 'Chat error', description: 'Unable to load messages.', variant: 'error' });
+      } finally {
+        setMessageLoadingByRoom((prev) => ({ ...prev, [roomId]: false }));
       }
     },
     [emitReadReceipt, showToast, chatContext?.id]
@@ -845,7 +920,7 @@ export function ChatPanel() {
           reply_to_id: replyTarget?.id ?? null,
           reply_to_content: replyTarget?.content ?? null,
           reply_to_sender: replyTarget
-            ? userNameMap.get(replyTarget.sender) ?? replyTarget.sender.slice(0, 8)
+            ? safeLookup(userNameMap, replyTarget.sender) ?? replyTarget.sender.slice(0, 8)
             : null,
         })
       );
@@ -858,7 +933,7 @@ export function ChatPanel() {
           reply_to_id: replyTarget?.id ?? null,
           reply_to_content: replyTarget?.content ?? null,
           reply_to_sender: replyTarget
-            ? userNameMap.get(replyTarget.sender) ?? replyTarget.sender.slice(0, 8)
+            ? safeLookup(userNameMap, replyTarget.sender) ?? replyTarget.sender.slice(0, 8)
             : null,
         })
       );
@@ -873,7 +948,7 @@ export function ChatPanel() {
       reply_to_id: replyTarget?.id ?? null,
       reply_to_content: replyTarget?.content ?? null,
       reply_to_sender: replyTarget
-        ? userNameMap.get(replyTarget.sender) ?? replyTarget.sender.slice(0, 8)
+        ? safeLookup(userNameMap, replyTarget.sender) ?? replyTarget.sender.slice(0, 8)
         : null,
     };
 
@@ -1083,8 +1158,8 @@ export function ChatPanel() {
     }
     try {
       await chatService.addGroupMembers(addMembersRoomId, addMemberIds);
-      const addedNames = addMemberIds.map((id) => allUserNameMap.get(id) ?? id.slice(0, 8));
-      const actorName = allUserNameMap.get(chatContext?.id ?? '') ?? 'Someone';
+      const addedNames = addMemberIds.map((id) => safeLookup(allUserNameMap, id) ?? id.slice(0, 8));
+      const actorName = safeLookup(allUserNameMap, chatContext?.id ?? '') ?? 'Someone';
       const systemLine =
         addedNames.length > 1
           ? `${actorName} added ${addedNames.join(', ')} to the group.`
@@ -1106,7 +1181,7 @@ export function ChatPanel() {
   const handleLeaveGroup = async (roomId: string) => {
     try {
       await chatService.leaveGroup(roomId);
-      const actorName = allUserNameMap.get(chatContext?.id ?? '') ?? 'Someone';
+      const actorName = safeLookup(allUserNameMap, chatContext?.id ?? '') ?? 'Someone';
       const systemLine = `${actorName} left the group.`;
       const socket = socketRef.current;
       if (socket && socket.readyState === WebSocket.OPEN) {
@@ -1133,25 +1208,44 @@ export function ChatPanel() {
   };
 
   const activeMessages = messages[activeRoom] ?? [];
+  const showActiveMessagesSkeleton = useReliableSkeleton(
+    Boolean(activeRoom) && Boolean(messageLoadingByRoom[activeRoom]) && activeMessages.length === 0
+  );
   const activeRoomInfo = rooms.find((room) => room.id === activeRoom) ?? null;
   const activeRoomTargetId = activeRoomInfo
     ? getDirectTargetId(activeRoomInfo, chatContext?.id)
     : null;
+  const activeRoomIsOnline = activeRoomTargetId ? onlineUsers.has(String(activeRoomTargetId)) : false;
+  const activeRoomLastSeen = activeRoomTargetId
+    ? safeLookup(lastSeenByUser, String(activeRoomTargetId)) ?? null
+    : null;
+  const statusBadgeLabel = hasMounted ? status : 'connecting';
+  const activePresenceLabel = !hasMounted
+    ? 'Connecting'
+    : activeRoomInfo?.kind === 'direct' && activeRoomTargetId
+      ? activeRoomIsOnline
+        ? 'Online'
+        : formatLastActive(activeRoomLastSeen)
+      : status === 'connected'
+        ? 'Connected'
+        : status === 'connecting'
+          ? 'Connecting'
+          : 'Offline';
   const activeRoomAvatar =
     activeRoomInfo?.kind === 'direct' && activeRoomTargetId
-      ? userAvatarMap.get(activeRoomTargetId) ?? null
+      ? safeLookup(userAvatarMap, activeRoomTargetId) ?? null
       : null;
   const activeMessageMap = useMemo(() => {
-    const map = new Map<string, ChatMessage>();
+    const map: Record<string, ChatMessage> = {};
     activeMessages.forEach((message) => {
-      map.set(message.id, message);
+      map[message.id] = message;
     });
     return map;
   }, [activeMessages]);
   const activeTyping = typingByRoom[activeRoom] ?? new Set();
   const typingNames = Array.from(activeTyping)
     .filter((id) => id !== chatContext?.id)
-    .map((id) => userNameMap.get(id) ?? id.slice(0, 8));
+    .map((id) => safeLookup(userNameMap, id) ?? id.slice(0, 8));
 
   const activeReadReceipts = readReceipts[activeRoom] ?? [];
   const readReceiptMap = useMemo(() => {
@@ -1186,10 +1280,10 @@ export function ChatPanel() {
   }, [activeMessages, activeReadReceipts]);
 
   const lastMessageByRoom = useMemo(() => {
-    const map = new Map<string, ChatMessage>();
+    const map: Record<string, ChatMessage> = {};
     Object.entries(messages).forEach(([roomId, roomMessages]) => {
       if (roomMessages.length) {
-        map.set(roomId, roomMessages[roomMessages.length - 1]);
+        map[roomId] = roomMessages[roomMessages.length - 1];
       }
     });
     return map;
@@ -1242,7 +1336,7 @@ export function ChatPanel() {
   };
 
   const getSeenNames = (message: ChatMessage) => {
-    return getSeenUsers(message).map((userId) => userNameMap.get(userId) ?? userId.slice(0, 8));
+    return getSeenUsers(message).map((userId) => safeLookup(userNameMap, userId) ?? userId.slice(0, 8));
   };
 
   const getUnreadCount = (roomId: string) => {
@@ -1284,7 +1378,7 @@ export function ChatPanel() {
           const a = parts[1];
           const b = parts[2];
           const targetId = chatContext.id === a ? b : a;
-          const label = userNameMap.get(targetId) ?? targetId.slice(0, 8);
+          const label = safeLookup(userNameMap, targetId) ?? targetId.slice(0, 8);
           unique.set(roomId, { id: roomId, label, kind: 'direct', targetId });
         }
       } else if (roomId.startsWith('group:')) {
@@ -1313,7 +1407,9 @@ export function ChatPanel() {
     return displayedRooms.slice(0, roomListLimit);
   }, [displayedRooms, roomListLimit]);
 
-
+  const showRoomListSkeleton = useReliableSkeleton(
+    chatContextLoading || contactsLoading || (!hasMounted && visibleRooms.length === 0)
+  );
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -1340,6 +1436,10 @@ export function ChatPanel() {
     return () => document.removeEventListener('pointerdown', handlePointer);
   }, []);
 
+  if (showPanelSkeleton) {
+    return <ChatPanelSkeleton />;
+  }
+
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
       <Card
@@ -1350,8 +1450,8 @@ export function ChatPanel() {
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-between">
             <CardTitle>Messenger</CardTitle>
-            <Badge variant="outline" className="uppercase tracking-[0.2em] text-[10px]">
-              {status}
+            <Badge variant="outline" className="uppercase tracking-[0.2em] text-[10px]" suppressHydrationWarning>
+              {statusBadgeLabel}
             </Badge>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-[rgba(15,23,42,0.08)] bg-[var(--surface-2)] px-3 py-2 text-xs text-neutral-500">
@@ -1368,7 +1468,9 @@ export function ChatPanel() {
           <div className="text-xs uppercase tracking-[0.2em] text-neutral-400">
             {roomSearch.trim() ? 'Search Results' : 'Chats'}
           </div>
-          {!roomSearch.trim() && displayedRooms.length === 0 ? (
+          {showRoomListSkeleton ? (
+            <ChatRoomListSkeleton count={8} />
+          ) : !roomSearch.trim() && displayedRooms.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[rgba(15,23,42,0.12)] bg-[var(--surface-2)] px-4 py-6 text-xs text-neutral-500">
               Start typing a name to search and begin a chat.
             </div>
@@ -1378,7 +1480,7 @@ export function ChatPanel() {
               room.label.toLowerCase().includes(roomSearch.toLowerCase().trim())
             )
             .map((room) => {
-            const lastMessage = lastMessageByRoom.get(room.id);
+            const lastMessage = safeLookup(lastMessageByRoom, room.id);
             const unreadCount = getUnreadCount(room.id);
             const isUnread = unreadCount > 0;
             const targetId = getDirectTargetId(room, chatContext?.id);
@@ -1418,10 +1520,10 @@ export function ChatPanel() {
                     : 'text-neutral-600 hover:bg-neutral-100'
                 }`}
               >
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[var(--brand-blue)] text-sm font-semibold text-white">
-                  {room.kind === 'direct' && targetId && userAvatarMap.get(targetId) ? (
+                <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[var(--brand-blue)] text-sm font-semibold text-white">
+                  {room.kind === 'direct' && targetId && safeLookup(userAvatarMap, targetId) ? (
                     <img
-                      src={userAvatarMap.get(targetId) ?? undefined}
+                      src={safeLookup(userAvatarMap, targetId) ?? undefined}
                       alt={room.label}
                       className="h-full w-full object-cover"
                     />
@@ -1434,15 +1536,7 @@ export function ChatPanel() {
                     <div className={`truncate text-sm ${isUnread ? 'font-semibold text-neutral-900' : 'font-medium'}`}>
                       {room.label}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {room.kind === 'direct' ? (
-                        <span
-                          className={`h-2 w-2 rounded-full ${
-                            isOnline ? 'bg-emerald-500' : 'bg-neutral-300'
-                          }`}
-                          title={isOnline ? 'Online' : 'Offline'}
-                        />
-                      ) : null}
+                    <div className="flex shrink-0 items-center gap-2">
                       {lastMessage ? (
                         <span className="text-[10px] text-neutral-400">
                           {new Date(lastMessage.sent_at).toLocaleTimeString()}
@@ -1453,8 +1547,16 @@ export function ChatPanel() {
                   <div className={`truncate text-xs ${isUnread ? 'font-semibold text-neutral-700' : 'text-neutral-500'}`}>
                     {lastMessage ? lastMessage.content : 'No messages yet'}
                   </div>
-                  <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-neutral-300">
-                    {room.kind}
+                  <div className="mt-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-neutral-400">
+                    <span>{room.kind}</span>
+                    {room.kind === 'direct' ? (
+                      <span
+                        className="font-bold tracking-[0.12em]"
+                        style={{ color: isOnline ? '#15803D' : '#9CA3AF' }}
+                      >
+                        {isOnline ? 'ONLINE' : 'OFFLINE'}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 {roomSearch.trim() ? null : unreadCount > 0 ? (
@@ -1584,10 +1686,10 @@ export function ChatPanel() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
-              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[var(--brand-blue)] text-sm font-semibold text-white">
-                {activeRoomInfo?.kind === 'direct' && activeRoomTargetId && userAvatarMap.get(activeRoomTargetId) ? (
+              <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[var(--brand-blue)] text-sm font-semibold text-white">
+                {activeRoomInfo?.kind === 'direct' && activeRoomTargetId && safeLookup(userAvatarMap, activeRoomTargetId) ? (
                   <img
-                    src={userAvatarMap.get(activeRoomTargetId) ?? undefined}
+                    src={safeLookup(userAvatarMap, activeRoomTargetId) ?? undefined}
                     alt={activeRoomInfo?.label ?? 'Chat'}
                     className="h-full w-full object-cover"
                   />
@@ -1597,18 +1699,17 @@ export function ChatPanel() {
               </div>
               <div>
                 <CardTitle>{activeRoomInfo?.label ?? 'Chat'}</CardTitle>
-                <div className="text-xs text-neutral-400">
+                <div className="text-xs text-neutral-500" suppressHydrationWarning>
                   {activeRoomInfo?.kind === 'direct' && activeRoomTargetId ? (
-                    <span className="inline-flex items-center gap-1">
-                      <span
-                        className={`h-2 w-2 rounded-full ${
-                          onlineUsers.has(String(activeRoomTargetId)) ? 'bg-emerald-500' : 'bg-neutral-300'
-                        }`}
-                      />
-                      {onlineUsers.has(String(activeRoomTargetId)) ? 'Online' : 'Offline'} • {status}
+                    <span className="inline-flex items-center rounded-full border border-[rgba(15,23,42,0.08)] bg-white/80 px-2.5 py-1 shadow-sm">
+                      <span className={activeRoomIsOnline ? 'font-semibold text-[#16A34A]' : 'font-medium text-neutral-500'}>
+                        {activePresenceLabel}
+                      </span>
                     </span>
                   ) : (
-                    <>Online • {status}</>
+                    <span className="font-medium">
+                      {activePresenceLabel}
+                    </span>
                   )}
                 </div>
               </div>
@@ -1640,7 +1741,9 @@ export function ChatPanel() {
                 Load earlier messages
               </button>
             ) : null}
-            {activeMessages.length === 0 ? (
+            {showActiveMessagesSkeleton ? (
+              <ChatMessagesSkeleton count={7} />
+            ) : activeMessages.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-sm text-neutral-500">
                 {activeRoomAvatar ? (
                   <img
@@ -1662,7 +1765,7 @@ export function ChatPanel() {
               activeMessages.map((msg) => {
                 const isMine = msg.sender === chatContext?.id;
                 const readStatus = getReadStatus(msg);
-                const replyMessage = msg.reply_to_id ? activeMessageMap.get(msg.reply_to_id) : null;
+                const replyMessage = msg.reply_to_id ? safeLookup(activeMessageMap, msg.reply_to_id) : null;
                 const reactions = msg.reactions ?? {};
                 const isUnsent = msg.content === UNSENT_TOKEN;
                 const bubbleClass = isMine
@@ -1790,13 +1893,13 @@ export function ChatPanel() {
                         </div>
                       ) : null}
                       <div className="text-[11px] opacity-70">
-                        {isMine ? 'You' : userNameMap.get(msg.sender) ?? msg.sender.slice(0, 8)}
+                        {isMine ? 'You' : safeLookup(userNameMap, msg.sender) ?? msg.sender.slice(0, 8)}
                       </div>
                       <div>
                         {isUnsent
                           ? isMine
                             ? 'You unsent a message.'
-                            : `${userNameMap.get(msg.sender) ?? 'User'} unsent a message.`
+                            : `${safeLookup(userNameMap, msg.sender) ?? 'User'} unsent a message.`
                           : msg.content}
                       </div>
                       <div className="mt-1 text-[10px] opacity-60">
@@ -1902,10 +2005,10 @@ export function ChatPanel() {
                         >
                           {getSeenUsers(msg).map((userId) => (
                             <div key={userId} className="flex items-center">
-                              {userAvatarMap.get(userId) ? (
+                              {safeLookup(userAvatarMap, userId) ? (
                                 <img
-                                  src={userAvatarMap.get(userId) ?? undefined}
-                                  alt={userNameMap.get(userId) ?? 'Seen'}
+                                  src={safeLookup(userAvatarMap, userId) ?? undefined}
+                                  alt={safeLookup(userNameMap, userId) ?? 'Seen'}
                                   className="h-4 w-4 rounded-full border border-neutral-200 object-cover"
                                 />
                               ) : (
@@ -1943,7 +2046,7 @@ export function ChatPanel() {
             {replyTarget ? (
               <div className="flex items-center justify-between rounded-2xl border border-[rgba(15,23,42,0.08)] bg-[var(--surface-2)] px-4 py-2 text-xs text-neutral-600">
                 <div className="truncate">
-                  Replying to {replyTarget.sender === chatContext?.id ? 'you' : userNameMap.get(replyTarget.sender) ?? replyTarget.sender.slice(0, 8)}: {replyTarget.content}
+                  Replying to {replyTarget.sender === chatContext?.id ? 'you' : safeLookup(userNameMap, replyTarget.sender) ?? replyTarget.sender.slice(0, 8)}: {replyTarget.content}
                 </div>
                 <button
                   type="button"

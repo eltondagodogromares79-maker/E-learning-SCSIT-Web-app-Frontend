@@ -103,6 +103,7 @@ export function useAuth() {
 
   return {
     user: userQuery.data ?? null,
+    hasHydrated,
     isInitializing: hasHydrated && hasStoredSession ? userQuery.isLoading : false,
     error: latestError ? (latestError as Error).message : null,
     clearError: () => undefined,

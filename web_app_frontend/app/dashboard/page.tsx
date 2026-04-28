@@ -6,12 +6,14 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export default function DashboardRedirectPage() {
   const router = useRouter();
-  const { user, isInitializing } = useAuth();
+  const { user, isInitializing, hasHydrated } = useAuth();
+  const loginHref = '/login?next=%2Fdashboard';
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (isInitializing) return;
     if (!user) {
-      router.replace('/login');
+      router.replace(loginHref);
       return;
     }
     if (user.must_change_password) {
@@ -27,8 +29,7 @@ export default function DashboardRedirectPage() {
       return;
     }
     router.replace('/dashboard/teacher');
-  }, [isInitializing, router, user]);
+  }, [hasHydrated, isInitializing, loginHref, router, user]);
 
   return null;
 }
-

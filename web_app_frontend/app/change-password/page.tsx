@@ -17,18 +17,20 @@ const roleRoutes: Record<string, string> = {
 
 export default function ChangePasswordGatePage() {
   const router = useRouter();
-  const { user, isInitializing } = useAuth();
+  const { user, isInitializing, hasHydrated } = useAuth();
+  const loginHref = '/login?next=%2Fchange-password';
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (isInitializing) return;
     if (!user) {
-      router.replace('/login');
+      router.replace(loginHref);
       return;
     }
     if (!user.must_change_password) {
       router.replace(roleRoutes[user.role] ?? '/dashboard');
     }
-  }, [isInitializing, router, user]);
+  }, [hasHydrated, isInitializing, loginHref, router, user]);
 
   return (
     <div className="min-h-screen bg-[#F5F9FF] px-6 py-12">

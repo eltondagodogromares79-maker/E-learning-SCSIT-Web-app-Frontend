@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AppShell from '@/components/layout/AppShell';
+import { StudentCardGridSkeleton, StudentRowsSkeleton } from '@/components/layout/StudentListSkeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
@@ -25,14 +26,22 @@ const ACCENT_COLORS = [
 ];
 
 export default function StudentDashboardPage() {
-  const { data: subjects = [] } = useSectionSubjects();
-  const { data: lessons = [] } = useLessons();
-  const { data: favorites = [] } = useFavoriteLessons();
-  const { data: assignments = [] } = useAssignments();
-  const { data: quizzes = [] } = useQuizzes();
-  const { data: submissions = [] } = useAssignmentSubmissions();
-  const { data: quizAttempts = [] } = useQuizAttempts();
+  const { data: subjects = [], isLoading: subjectsLoading } = useSectionSubjects();
+  const { data: lessons = [], isLoading: lessonsLoading } = useLessons();
+  const { data: favorites = [], isLoading: favoritesLoading } = useFavoriteLessons();
+  const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments();
+  const { data: quizzes = [], isLoading: quizzesLoading } = useQuizzes();
+  const { data: submissions = [], isLoading: submissionsLoading } = useAssignmentSubmissions();
+  const { data: quizAttempts = [], isLoading: quizAttemptsLoading } = useQuizAttempts();
   const [query, setQuery] = useState('');
+  const dashboardLoading =
+    subjectsLoading ||
+    lessonsLoading ||
+    favoritesLoading ||
+    assignmentsLoading ||
+    quizzesLoading ||
+    submissionsLoading ||
+    quizAttemptsLoading;
 
   const submissionLookup = Object.fromEntries(submissions.map((s) => [s.assignment_id, s]));
   const attemptLookup = Object.fromEntries(quizAttempts.filter((a) => a.submitted_at).map((a) => [a.quiz_id, a]));
@@ -105,7 +114,9 @@ export default function StudentDashboardPage() {
         </div>
 
         {/* ── Subject Cards ── */}
-        {filteredSubjects.length === 0 ? (
+        {dashboardLoading ? (
+          <StudentCardGridSkeleton count={6} columnsClass="md:grid-cols-2 xl:grid-cols-3" />
+        ) : filteredSubjects.length === 0 ? (
           <div className="rounded-2xl border p-16 text-center text-sm"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
             {query.trim() ? `No subjects found for "${query.trim()}".` : 'No subjects enrolled yet.'}
@@ -190,7 +201,9 @@ export default function StudentDashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {favorites.length > 0 && (
+              {dashboardLoading ? (
+                <StudentRowsSkeleton count={4} />
+              ) : favorites.length > 0 && (
                 <>
                   <div className="flex items-center gap-1.5 pb-1 text-[11px] font-bold uppercase tracking-widest" style={{ color: '#dc2626' }}>
                     <Heart className="h-3 w-3" style={{ fill: '#dc2626', color: '#dc2626' }} />
@@ -211,9 +224,9 @@ export default function StudentDashboardPage() {
                   <div className="pb-1 text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--muted-foreground)' }}>Recent</div>
                 </>
               )}
-              {previewLessons.length === 0 ? (
+              {!dashboardLoading && previewLessons.length === 0 ? (
                 <div className="rounded-xl border border-dashed p-4 text-xs text-center" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>No materials yet.</div>
-              ) : previewLessons.map((lesson) => (
+              ) : !dashboardLoading && previewLessons.map((lesson) => (
                 <Link key={lesson.id} href={`/dashboard/student/lessons/${lesson.id}`}
                   className="flex items-center justify-between rounded-xl p-3 transition hover:bg-[var(--surface-2)]"
                   style={{ border: '1px solid var(--border)' }}>
@@ -240,7 +253,9 @@ export default function StudentDashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {pendingAssignments.length === 0 ? (
+              {dashboardLoading ? (
+                <StudentRowsSkeleton count={4} />
+              ) : pendingAssignments.length === 0 ? (
                 <div className="rounded-xl border border-dashed p-4 text-xs text-center" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>No pending assignments.</div>
               ) : pendingAssignments.map((assignment) => (
                 <Link key={assignment.id} href={`/dashboard/student/assignments/${assignment.id}`}
@@ -272,7 +287,9 @@ export default function StudentDashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {pendingQuizzes.length === 0 ? (
+              {dashboardLoading ? (
+                <StudentRowsSkeleton count={4} />
+              ) : pendingQuizzes.length === 0 ? (
                 <div className="rounded-xl border border-dashed p-4 text-xs text-center" style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>No upcoming quizzes.</div>
               ) : pendingQuizzes.map((quiz) => (
                 <Link key={quiz.id} href={`/dashboard/student/quizzes/${quiz.id}`}

@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import AppShell from '@/components/layout/AppShell';
+import { StudentTranscriptSkeleton } from '@/components/layout/StudentListSkeletons';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useStudentTranscript } from '@/features/students/hooks/useStudentTranscript';
 import { GraduationCap, BookOpen, User, CalendarDays, Layers, ChevronDown, ChevronUp } from 'lucide-react';
@@ -62,11 +63,7 @@ export default function StudentTranscriptPage() {
           </h2>
 
           {isLoading ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
-              style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
-              <GraduationCap className="h-8 w-8 opacity-30" />
-              <p className="text-sm">Loading transcript…</p>
-            </div>
+            <StudentTranscriptSkeleton count={4} />
           ) : enrollments.length === 0 ? (
             <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
               style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>

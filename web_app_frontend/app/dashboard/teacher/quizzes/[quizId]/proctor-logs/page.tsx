@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useRef, useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -133,9 +134,11 @@ export default function TeacherQuizProctorLogsPage({ params }: { params: Promise
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {filteredLogs.length === 0 ? (
+            {loading && filteredLogs.length === 0 ? (
+              <TeacherCardGridSkeleton count={3} columnsClass="" />
+            ) : filteredLogs.length === 0 ? (
               <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
-                {loading ? 'Loading proctor logs…' : 'No logs yet.'}
+                No logs yet.
               </div>
             ) : (
               filteredLogs.map((log) => (

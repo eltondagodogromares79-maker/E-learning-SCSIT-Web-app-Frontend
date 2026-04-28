@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
+import { StudentCardGridSkeleton, StudentRowsSkeleton } from '@/components/layout/StudentListSkeletons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -323,9 +324,9 @@ export default function StudentSubjectDetailPage() {
         </div>
 
         {isLoading ? (
-          <div className="rounded-2xl border p-16 text-center text-sm"
-            style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
-            Loading subject content…
+          <div className="space-y-6">
+            <StudentRowsSkeleton count={2} />
+            <StudentCardGridSkeleton count={6} />
           </div>
         ) : (
           <>

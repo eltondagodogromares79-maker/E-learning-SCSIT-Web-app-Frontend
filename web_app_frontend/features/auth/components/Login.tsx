@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,7 +31,8 @@ const fallbackStats = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error, clearError, user, isInitializing } = useAuth();
+  const searchParams = useSearchParams();
+  const { login, isLoading, error, clearError, user, isInitializing, hasHydrated } = useAuth();
   const { data: publicStats } = usePublicStats();
   const stats = publicStats
     ? [
@@ -54,34 +55,52 @@ export default function LoginPage() {
   });
 
   const rememberMe = watch('rememberMe');
+  const nextParam = searchParams.get('next');
+  const resolveNextHref = (fallback: string) => {
+    if (!nextParam) return fallback;
+    if (!nextParam.startsWith('/')) return fallback;
+    if (nextParam.startsWith('//')) return fallback;
+    return nextParam;
+  };
 
   const onSubmit = async (data: LoginFormData) => {
     clearError();
     try {
       const user = await login(data.email, data.password);
       const role = user?.role ?? 'student';
-      if (user?.must_change_password) { router.push('/change-password'); return; }
       const roleRoutes: Record<string, string> = {
         student: '/dashboard/student',
         teacher: '/dashboard/teacher',
         instructor: '/dashboard/teacher',
         adviser: '/dashboard/teacher/adviser',
       };
-      router.push(roleRoutes[role] ?? '/dashboard');
+      const fallbackHref = roleRoutes[role] ?? '/dashboard';
+      const nextHref = resolveNextHref(fallbackHref);
+      if (user?.must_change_password) {
+        router.push(`/change-password?next=${encodeURIComponent(nextHref)}`);
+        return;
+      }
+      router.push(nextHref);
     } catch (err: unknown) { void err; }
   };
 
   useEffect(() => {
+    if (!hasHydrated) return;
     if (isInitializing || !user) return;
-    if (user.must_change_password) { router.replace('/change-password'); return; }
     const roleRoutes: Record<string, string> = {
       student: '/dashboard/student',
       teacher: '/dashboard/teacher',
       instructor: '/dashboard/teacher',
       adviser: '/dashboard/teacher/adviser',
     };
-    router.replace(roleRoutes[user.role] ?? '/dashboard');
-  }, [isInitializing, router, user]);
+    const fallbackHref = roleRoutes[user.role] ?? '/dashboard';
+    const nextHref = resolveNextHref(fallbackHref);
+    if (user.must_change_password) {
+      router.replace(`/change-password?next=${encodeURIComponent(nextHref)}`);
+      return;
+    }
+    router.replace(nextHref);
+  }, [hasHydrated, isInitializing, nextParam, router, user]);
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--background)' }}>

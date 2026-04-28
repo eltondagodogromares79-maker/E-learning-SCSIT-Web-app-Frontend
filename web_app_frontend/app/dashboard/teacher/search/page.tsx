@@ -4,6 +4,7 @@ import { Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherRowsSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { teacherNav } from '@/components/navigation/nav-config';
@@ -12,6 +13,7 @@ import { useLessons } from '@/features/lessons/hooks/useLessons';
 import { useAssignments } from '@/features/assignments/hooks/useAssignments';
 import { useQuizzes } from '@/features/quizzes/hooks/useQuizzes';
 import { useStudents } from '@/features/students/hooks/useStudents';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 
 function useQuery() {
   const params = useSearchParams();
@@ -21,11 +23,14 @@ function useQuery() {
 function TeacherSearchPageInner() {
   const query = useQuery();
   const normalized = query.trim().toLowerCase();
-  const { data: sectionSubjects = [] } = useSectionSubjects();
-  const { data: lessons = [] } = useLessons();
-  const { data: assignments = [] } = useAssignments();
-  const { data: quizzes = [] } = useQuizzes();
-  const { data: students = [] } = useStudents();
+  const { data: sectionSubjects = [], isLoading: classesLoading } = useSectionSubjects();
+  const { data: lessons = [], isLoading: lessonsLoading } = useLessons();
+  const { data: assignments = [], isLoading: assignmentsLoading } = useAssignments();
+  const { data: quizzes = [], isLoading: quizzesLoading } = useQuizzes();
+  const { data: students = [], isLoading: studentsLoading } = useStudents();
+  const showSearchSkeleton = useReliableSkeleton(
+    classesLoading || lessonsLoading || assignmentsLoading || quizzesLoading || studentsLoading
+  );
 
   const filteredClasses = useMemo(
     () =>
@@ -86,7 +91,9 @@ function TeacherSearchPageInner() {
               <CardTitle>Classes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredClasses.length === 0 ? (
+              {showSearchSkeleton ? (
+                <TeacherRowsSkeleton count={4} />
+              ) : filteredClasses.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching classes.</div>
               ) : (
                 filteredClasses.map((item) => (
@@ -104,7 +111,9 @@ function TeacherSearchPageInner() {
               <CardTitle>Learning materials</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredLessons.length === 0 ? (
+              {showSearchSkeleton ? (
+                <TeacherRowsSkeleton count={4} />
+              ) : filteredLessons.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching learning materials.</div>
               ) : (
                 filteredLessons.map((lesson) => (
@@ -124,7 +133,9 @@ function TeacherSearchPageInner() {
               <CardTitle>Assignments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredAssignments.length === 0 ? (
+              {showSearchSkeleton ? (
+                <TeacherRowsSkeleton count={4} />
+              ) : filteredAssignments.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching assignments.</div>
               ) : (
                 filteredAssignments.map((assignment) => (
@@ -146,7 +157,9 @@ function TeacherSearchPageInner() {
               <CardTitle>Quizzes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredQuizzes.length === 0 ? (
+              {showSearchSkeleton ? (
+                <TeacherRowsSkeleton count={4} />
+              ) : filteredQuizzes.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching quizzes.</div>
               ) : (
                 filteredQuizzes.map((quiz) => (
@@ -168,7 +181,9 @@ function TeacherSearchPageInner() {
               <CardTitle>Students</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {filteredStudents.length === 0 ? (
+              {showSearchSkeleton ? (
+                <TeacherRowsSkeleton count={4} />
+              ) : filteredStudents.length === 0 ? (
                 <div className="text-sm text-neutral-500">No matching students.</div>
               ) : (
                 filteredStudents.map((student) => (

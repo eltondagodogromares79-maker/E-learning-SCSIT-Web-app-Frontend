@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherStudentRowsSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { useStudentPerformance } from '@/features/dashboard/hooks/useStudentPerformance';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import type { StudentPerformanceStudent } from '@/features/dashboard/types';
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -70,10 +72,11 @@ function MiniBar({ value, total, color }: { value: number; total: number; color:
 export default function TeacherSubjectStudentsPage() {
   const params = useParams();
   const sectionSubjectId = params.sectionSubjectId as string;
-  const { data: sectionSubjects = [] } = useSectionSubjects();
+  const { data: sectionSubjects = [], isLoading: sectionSubjectsLoading } = useSectionSubjects();
   const { data, isLoading } = useStudentPerformance();
   const [query, setQuery] = useState('');
   const [genderFilter, setGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const showListSkeleton = useReliableSkeleton(isLoading || sectionSubjectsLoading);
 
   const subject = sectionSubjects.find((item) => item.id === sectionSubjectId);
   const section = data?.sections.find((item) => item.section_subject_id === sectionSubjectId);
@@ -202,10 +205,8 @@ export default function TeacherSubjectStudentsPage() {
         </div>
 
         {/* student list */}
-        {isLoading ? (
-          <div className="rounded-xl border border-dashed border-neutral-200 p-10 text-center text-sm text-neutral-400">
-            Loading students…
-          </div>
+        {showListSkeleton ? (
+          <TeacherStudentRowsSkeleton />
         ) : visibleStudents.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-200 p-10 text-center text-sm text-neutral-400">
             No students match your filters.

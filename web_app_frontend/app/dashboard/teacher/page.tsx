@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton, TeacherTableSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useAssignmentSubmissions } from '@/features/assignments/hooks/useAssignmentSubmissions';
@@ -14,6 +15,7 @@ import { useAttendanceSummary } from '@/features/attendance/hooks/useAttendanceS
 import { useStudentPerformance } from '@/features/dashboard/hooks/useStudentPerformance';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useChatContext } from '@/features/chat/hooks/useChatContext';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import { useQueries } from '@tanstack/react-query';
 import { attendanceService } from '@/features/attendance/services/attendanceService';
 import {
@@ -33,20 +35,29 @@ const ACCENT_COLORS = [
 type StudentFilter = 'all' | 'needs_attention';
 
 export default function TeacherDashboardPage() {
-  const { data: students = [] } = useTeacherStudents();
-  const { data: submissions = [] } = useAssignmentSubmissions();
-  const { data: attempts = [] } = useQuizAttempts();
-  const { data: stats = [] } = useTeacherStats();
-  const { data: sectionSubjects = [] } = useSectionSubjects();
-  const { data: attendanceSummary = [] } = useAttendanceSummary();
+  const { data: students = [], isLoading: studentsLoading } = useTeacherStudents();
+  const { data: submissions = [], isLoading: submissionsLoading } = useAssignmentSubmissions();
+  const { data: attempts = [], isLoading: attemptsLoading } = useQuizAttempts();
+  const { data: stats = [], isLoading: statsLoading } = useTeacherStats();
+  const { data: sectionSubjects = [], isLoading: classesLoading } = useSectionSubjects();
+  const { data: attendanceSummary = [], isLoading: attendanceSummaryLoading } = useAttendanceSummary();
   const { user } = useAuth();
   const { data: chatContext } = useChatContext();
-  const { data: perfData } = useStudentPerformance();
+  const { data: perfData, isLoading: performanceLoading } = useStudentPerformance();
   const [studentQuery, setStudentQuery] = useState('');
   const [sectionFilter, setSectionFilter] = useState('all');
   const [studentFilter, setStudentFilter] = useState<StudentFilter>('all');
   const [classQuery, setClassQuery] = useState('');
   const [classSectionFilter, setClassSectionFilter] = useState('');
+  const showClassSkeleton = useReliableSkeleton(classesLoading);
+  const showStudentSkeleton = useReliableSkeleton(
+    studentsLoading ||
+      statsLoading ||
+      performanceLoading ||
+      submissionsLoading ||
+      attemptsLoading ||
+      attendanceSummaryLoading
+  );
 
   const perfSections = useMemo(() => perfData?.sections ?? [], [perfData]);
 
@@ -234,7 +245,9 @@ export default function TeacherDashboardPage() {
         </div>
 
         {/* ── Class Cards ── */}
-        {classSections.length === 0 ? (
+        {showClassSkeleton ? (
+          <TeacherCardGridSkeleton />
+        ) : classSections.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
             <LayoutGrid className="h-8 w-8 opacity-30" />
@@ -348,7 +361,9 @@ export default function TeacherDashboardPage() {
               </span>
             </div>
 
-            {studentFilter === 'needs_attention' && filteredStudents.length === 0 ? (
+            {showStudentSkeleton ? (
+              <TeacherTableSkeleton />
+            ) : studentFilter === 'needs_attention' && filteredStudents.length === 0 ? (
               <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
                 🎉 No students need attention right now!
               </div>

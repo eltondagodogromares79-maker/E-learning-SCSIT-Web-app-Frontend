@@ -2,10 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import AppShell from '@/components/layout/AppShell';
+import { TeacherCardGridSkeleton } from '@/components/layout/TeacherListSkeletons';
 import { teacherNav } from '@/components/navigation/nav-config';
 import { useSectionSubjects } from '@/features/subjects/hooks/useSectionSubjects';
 import { useAttendanceSessions } from '@/features/attendance/hooks/useAttendanceSessions';
+import { useReliableSkeleton } from '@/features/shared/hooks/useReliableSkeleton';
 import { useCreateAttendanceSession } from '@/features/attendance/hooks/useCreateAttendanceSession';
 import { useEndAttendanceSession } from '@/features/attendance/hooks/useEndAttendanceSession';
 import { useStartAttendanceSession } from '@/features/attendance/hooks/useStartAttendanceSession';
@@ -16,7 +19,7 @@ import { useToast } from '@/components/ui/toast';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Video, Search, Clock, Users, Play, Square, Pencil, Trash2, Plus } from 'lucide-react';
+import { Video, Search, Clock, Users, Play, Square, Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
 
 const stateStyle = {
   live:     { color: '#059669', light: 'rgba(5,150,105,0.1)',   label: 'Live'     },
@@ -25,6 +28,7 @@ const stateStyle = {
 };
 
 export default function TeacherOnlineClassesPage() {
+  const router = useRouter();
   const { data: sectionSubjects = [] } = useSectionSubjects();
   const [sectionSubjectId, setSectionSubjectId] = useState('');
   const [title, setTitle] = useState('');
@@ -46,7 +50,8 @@ export default function TeacherOnlineClassesPage() {
   const nowLocal = () => new Date().toISOString().slice(0, 16);
   const isPastDate = (v?: string) => { if (!v) return false; const d = new Date(v); return isNaN(d.getTime()) || d.getTime() < Date.now(); };
 
-  const { data: sessions = [] } = useAttendanceSessions(sectionSubjectId ? { section_subject: sectionSubjectId } : undefined);
+  const { data: sessions = [], isLoading: sessionsLoading } = useAttendanceSessions(sectionSubjectId ? { section_subject: sectionSubjectId } : undefined);
+  const showSessionsSkeleton = useReliableSkeleton(sessionsLoading);
   const onlineSessions = useMemo(() => sessions.filter((s) => s.is_online_class), [sessions]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -151,7 +156,9 @@ export default function TeacherOnlineClassesPage() {
         </div>
 
         {/* ── Session cards ── */}
-        {filtered.length === 0 ? (
+        {showSessionsSkeleton ? (
+          <TeacherCardGridSkeleton />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
             <Video className="h-8 w-8 opacity-30" />
@@ -165,7 +172,11 @@ export default function TeacherOnlineClassesPage() {
               return (
                 <motion.div key={session.id} whileHover={{ y: -4 }} transition={{ duration: 0.18 }}>
                   <div className="flex flex-col overflow-hidden rounded-2xl border"
-                    style={{ borderColor: 'var(--border)', background: 'var(--surface)', boxShadow: 'var(--shadow-card)' }}>
+                    style={{
+                      borderColor: 'var(--border)',
+                      background: 'var(--surface)',
+                      boxShadow: 'var(--shadow-card)',
+                    }}>
                     <div className="h-1.5 w-full" style={{ background: style.color }} />
                     <div className="flex flex-1 flex-col p-5">
                       <div className="mb-3 flex items-start justify-between gap-2">
@@ -185,6 +196,11 @@ export default function TeacherOnlineClassesPage() {
                         <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{new Date(session.scheduled_at).toLocaleString()}</span>
                         <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{(session.present_count ?? 0) + (session.late_count ?? 0)} / {session.total_count ?? 0} joined</span>
                       </div>
+                      <Button size="sm" variant="outline" className="mb-3 w-full gap-2"
+                        onClick={() => router.push(`/dashboard/teacher/attendance/${session.id}`)}>
+                        Open student list
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
                       <div className="mt-auto flex flex-wrap gap-2">
                         <Button size="sm" disabled={startSession.isPending || Boolean(session.ended_at) || session.is_live}
                           className="flex items-center gap-1.5"
@@ -219,6 +235,7 @@ export default function TeacherOnlineClassesPage() {
             })}
           </div>
         )}
+
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

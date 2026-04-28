@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import AppShell from '@/components/layout/AppShell';
+import { StudentCardGridSkeleton, StudentRowsSkeleton } from '@/components/layout/StudentListSkeletons';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { studentNav } from '@/components/navigation/nav-config';
 import { useQuizzes } from '@/features/quizzes/hooks/useQuizzes';
@@ -27,9 +28,9 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 ];
 
 export default function StudentQuizzesPage() {
-  const { data: quizzes = [] } = useQuizzes();
-  const { data: attempts = [] } = useQuizAttempts();
-  const { data: subjects = [] } = useSubjects();
+  const { data: quizzes = [], isLoading: quizzesLoading } = useQuizzes();
+  const { data: attempts = [], isLoading: attemptsLoading } = useQuizAttempts();
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
@@ -40,6 +41,7 @@ export default function StudentQuizzesPage() {
   const [violationLoading, setViolationLoading] = useState(false);
   const [violations, setViolations] = useState<Array<{ id: string; detail?: string; created_at?: string }>>([]);
   const [violationCounts, setViolationCounts] = useState<Record<string, number>>({});
+  const pageLoading = quizzesLoading || attemptsLoading || subjectsLoading;
   const now = Date.now();
   const dueSoonMs = 1000 * 60 * 60 * 24 * 3;
 
@@ -109,7 +111,7 @@ export default function StudentQuizzesPage() {
         const rightTime = new Date(right.created_at).getTime();
         return sortOrder === 'newest' ? rightTime - leftTime : leftTime - rightTime;
       });
-  }, [now, quizzes, query, sortOrder, statusFilter, submittedByQuizId, subjectLookup]);
+  }, [now, quizzes, query, sortOrder, statusFilter, submittedByQuizId, subjectLookup, sectionFilter]);
 
   const counts = useMemo(() => {
     let pending = 0, submitted = 0, overdue = 0;
@@ -232,7 +234,9 @@ export default function StudentQuizzesPage() {
         </div>
 
         {/* ── Cards ── */}
-        {filtered.length === 0 ? (
+        {pageLoading ? (
+          <StudentCardGridSkeleton count={6} />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border p-16 text-center"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)', color: 'var(--muted-foreground)' }}>
             <HelpCircle className="h-8 w-8 opacity-30" />
@@ -356,10 +360,7 @@ export default function StudentQuizzesPage() {
               <DialogDescription>Photos captured automatically during your quiz session.</DialogDescription>
             </DialogHeader>
             {snapshotLoading ? (
-              <div className="rounded-2xl border p-10 text-center text-sm"
-                style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>
-                Loading snapshots…
-              </div>
+              <StudentRowsSkeleton count={4} />
             ) : activeSnapshots.length === 0 ? (
               <div className="flex flex-col items-center gap-3 rounded-2xl border p-10 text-center"
                 style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>
@@ -398,10 +399,7 @@ export default function StudentQuizzesPage() {
               <DialogDescription>Proctoring events recorded during your quiz.</DialogDescription>
             </DialogHeader>
             {violationLoading ? (
-              <div className="rounded-2xl border p-10 text-center text-sm"
-                style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>
-                Loading violations…
-              </div>
+              <StudentRowsSkeleton count={4} />
             ) : violations.length === 0 ? (
               <div className="flex flex-col items-center gap-3 rounded-2xl border p-10 text-center"
                 style={{ borderColor: 'var(--border)', color: 'var(--muted-foreground)' }}>

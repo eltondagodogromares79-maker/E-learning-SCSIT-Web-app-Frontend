@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCSIT NEXUS Web App Thesis Book</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 25mm 22mm 25mm 22mm;
+    }
+
+    :root {
+      --text: #222222;
+      --muted: #666666;
+      --line: #d8d8d8;
+      --soft: #f7f7f7;
+      --heading: #111111;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Times New Roman", Times, serif;
+      color: var(--text);
+      background: #f3f3f3;
+      line-height: 1.55;
+    }
+
+    .document {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .page {
+      width: 100%;
+      min-height: 297mm;
+      margin: 0 auto 18px;
+      background: #ffffff;
+      padding: 25mm 22mm;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      position: relative;
+    }
+
+    .chapter-label {
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .logo-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .logo-wrap img {
+      width: 84px;
+      height: 84px;
+      object-fit: contain;
+    }
+
+    h1, h2, h3, h4 {
+      margin: 0;
+      color: var(--heading);
+    }
+
+    h1 {
+      font-size: 22px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 18px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h3 {
+      font-size: 15px;
+      margin: 16px 0 8px;
+      text-transform: uppercase;
+    }
+
+    h4 {
+      font-size: 13.5px;
+      margin: 12px 0 6px;
+    }
+
+    p {
+      margin: 0 0 10px;
+      text-align: justify;
+      font-size: 13px;
+    }
+
+    ul, ol {
+      margin: 8px 0 12px 22px;
+      font-size: 13px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .spacer-lg {
+      height: 20px;
+    }
+
+    .spacer-xl {
+      height: 34px;
+    }
+
+    .line-block {
+      margin: 16px 0;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+    }
+
+    .title-block {
+      margin: 0 auto;
+      max-width: 640px;
+    }
+
+    .title-box {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 0;
+      margin: 14px 0;
+    }
+
+    .signature-table,
+    .resource-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 18px;
+    }
+
+    .gantt-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 18px;
+      table-layout: fixed;
+    }
+
+    .signature-table td,
+    .resource-table th,
+    .resource-table td,
+    .gantt-table th,
+    .gantt-table td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      vertical-align: top;
+      font-size: 12.5px;
+    }
+
+    .resource-table th,
+    .gantt-table th {
+      background: var(--soft);
+      text-align: left;
+    }
+
+    .gantt-task {
+      font-weight: 700;
+      background: #fafafa;
+    }
+
+    .gantt-fill {
+      background: #1f4d8f;
+      color: #ffffff;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .gantt-empty {
+      background: #ffffff;
+    }
+
+    .gantt-week {
+      text-align: center;
+      font-size: 10.5px;
+      line-height: 1.2;
+      padding: 6px 4px;
+    }
+
+    .gantt-check {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #163c8c;
+      background: #eef4ff;
+      padding: 4px 0;
+    }
+
+    .gantt-table .small-task {
+      font-size: 11.5px;
+      line-height: 1.35;
+    }
+
+    .toc-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--line);
+      background: #fcfcfc;
+    }
+
+    .toc-list li {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #ececec;
+      font-size: 12.5px;
+    }
+
+    .indent-1 {
+      padding-left: 18px;
+    }
+
+    .indent-2 {
+      padding-left: 34px;
+    }
+
+    .chapter-intro {
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    .figure-box {
+      margin: 14px 0 18px;
+      border: 1px solid var(--line);
+      background: #fcfcfc;
+      padding: 18px;
+    }
+
+    .figure-placeholder {
+      min-height: 180px;
+      border: 1px dashed #bdbdbd;
+      background: #fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .figure-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    .figure-caption {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .flowchart {
+      margin: 16px 0 18px;
+      border: 1px solid var(--line);
+      background: #fcfcfc;
+      padding: 18px 16px;
+    }
+
+    .flow-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .flow-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .flow-box,
+    .flow-decision,
+    .flow-end {
+      border: 1px solid #bfc7d3;
+      background: #ffffff;
+      min-width: 200px;
+      max-width: 240px;
+      padding: 12px 14px;
+      text-align: center;
+      font-size: 12.5px;
+      line-height: 1.4;
+    }
+
+    .flow-end {
+      border-radius: 999px;
+      background: #f5f7fb;
+      font-weight: 700;
+    }
+
+    .flow-box {
+      border-radius: 10px;
+    }
+
+    .flow-decision {
+      transform: rotate(45deg);
+      width: 150px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      background: #fafafa;
+    }
+
+    .flow-decision span {
+      transform: rotate(-45deg);
+      display: block;
+      width: 95px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .flow-arrow {
+      font-size: 18px;
+      color: #4b5563;
+      line-height: 1;
+    }
+
+    .flow-note {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .toc-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: #f1f1f1;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 14mm;
+      right: 22mm;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      .document {
+        max-width: none;
+        padding: 0;
+      }
+
+      .page {
+        margin: 0;
+        min-height: auto;
+        box-shadow: none;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="document">
+    <section class="page">
+      <div class="chapter-label">Title Page</div>
+      <div class="spacer-xl"></div>
+      <div class="logo-wrap">
+        <img src="../public/logo.png" alt="SCSIT NEXUS Logo" />
+      </div>
+      <p class="center muted">Republic of the Philippines</p>
+      <p class="center muted">Salazar Colleges of Science and Institute of Technology</p>
+      <p class="center muted">College of Computer Studies</p>
+
+      <div class="spacer-xl"></div>
+      <div class="title-block">
+        <div class="title-box">
+          <h1>SCSIT NEXUS Web Application</h1>
+          <p class="center">
+            A Thesis Book Focused on the Web-Based Learning Management System
+            for Salazar Colleges of Science and Institute of Technology,
+            with emphasis on Junior High School and Senior High School
+          </p>
+        </div>
+      </div>
+
+      <div class="spacer-xl"></div>
+      <p class="center">A Project Documentation Presented to the Faculty of</p>
+      <p class="center">College of Computer Studies</p>
+      <p class="center">Salazar Colleges of Science and Institute of Technology</p>
+
+      <div class="spacer-xl"></div>
+      <p class="center">In Partial Fulfillment of the Requirements for the Degree of</p>
+      <p class="center">Bachelor of Science and Institute of Technology</p>
+
+      <div class="spacer-xl"></div>
+      <p class="center"><strong>Prepared by:</strong></p>
+      <p class="center">Elton Dagodog</p>
+      <div class="spacer-lg"></div>
+      <p class="center"><strong>Adviser:</strong></p>
+      <p class="center">Ms. Jehan Grade c. Durban</p>
+
+      <div class="spacer-xl"></div>
+      <p class="center">April 2026</p>
+      <div class="page-number">1</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Approval Sheet</div>
+      <h2>Approval Sheet</h2>
+      <p>
+        This thesis book entitled <strong>SCSIT NEXUS Web Application</strong> has been
+        examined and is hereby recommended for approval and acceptance.
+      </p>
+
+      <div class="spacer-lg"></div>
+      <table class="signature-table">
+        <tr>
+          <td>Ms. Jehan Grade c. Durban<br /><span class="muted">Thesis Adviser</span></td>
+          <td>Date: ____________________</td>
+        </tr>
+        <tr>
+          <td>Era may l. abelgas<br /><span class="muted">Panelist</span></td>
+          <td>Date: ____________________</td>
+        </tr>
+        <tr>
+          <td>Junel Idaño<br /><span class="muted">Panelist</span></td>
+          <td>Date: ____________________</td>
+        </tr>
+        <tr>
+          <td>Jehan Grace Durban<br /><span class="muted">Dean</span></td>
+          <td>Date: ____________________</td>
+        </tr>
+      </table>
+
+      <p>
+        Approved in partial fulfillment of the requirements for the degree of
+        <strong>Bachelor of Science and Institute of Technology</strong>.
+      </p>
+      <div class="page-number">2</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Project Approval Sheet</div>
+      <h2>Project Approval Sheet</h2>
+      <p>
+        This certifies that the project documentation and related system output for
+        <strong>SCSIT NEXUS Web Application</strong> have been reviewed and accepted
+        as meeting the project requirements of the institution.
+      </p>
+
+      <table class="signature-table">
+        <tr>
+          <td>Jehan Grace Durban</td>
+          <td>Date: ____________________</td>
+        </tr>
+        <tr>
+          <td>Jehan Grace Durban<br /><span class="muted">Dean</span></td>
+          <td>Date: ____________________</td>
+        </tr>
+        <tr>
+          <td>Ms. Jehan Grade c. Durban<br /><span class="muted">Adviser / Course Instructor</span></td>
+          <td>Date: ____________________</td>
+        </tr>
+      </table>
+
+      <div class="line-block">
+        <strong>Note:</strong> The signatories in this thesis draft were updated
+        according to the names you provided for the current manuscript version.
+      </div>
+      <div class="page-number">3</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Table of Contents</div>
+      <h2>Table of Contents</h2>
+      <div class="toc-head">
+        <span>Section</span>
+        <span>Page</span>
+      </div>
+      <ul class="toc-list">
+        <li><span>Title Page</span><span>1</span></li>
+        <li><span>Approval Sheet</span><span>2</span></li>
+        <li><span>Project Approval Sheet</span><span>3</span></li>
+        <li><span>Table of Contents</span><span>4</span></li>
+        <li><span>Abstract</span><span>5</span></li>
+        <li><span>Acknowledgement</span><span>6</span></li>
+        <li><span>Introduction</span><span>7</span></li>
+        <li><span class="indent-1">Overview</span><span>7</span></li>
+        <li><span class="indent-1">Institutional Context</span><span>7</span></li>
+        <li><span class="indent-1">Target Users</span><span>8</span></li>
+        <li><span class="indent-1">Goals and Objectives</span><span>8</span></li>
+        <li><span class="indent-2">Main Goal</span><span>8</span></li>
+        <li><span class="indent-2">Specific Objective</span><span>8</span></li>
+        <li><span class="indent-1">Significance of the Study</span><span>9</span></li>
+        <li><span>Methodology</span><span>9</span></li>
+        <li><span class="indent-1">Planning Phase</span><span>9</span></li>
+        <li><span class="indent-1">Design Phase</span><span>9</span></li>
+        <li><span class="indent-1">Development Phase</span><span>10</span></li>
+        <li><span class="indent-1">Testing and Documentation Phase</span><span>10</span></li>
+        <li><span>Scope &amp; Limitation</span><span>10</span></li>
+        <li><span class="indent-1">Scope</span><span>10</span></li>
+        <li><span class="indent-1">Limitation</span><span>10</span></li>
+        <li><span>Project Management</span><span>11</span></li>
+        <li><span class="indent-1">Hardware Resources</span><span>11</span></li>
+        <li><span class="indent-1">Software Resources</span><span>11</span></li>
+        <li><span class="indent-1">Work Breakdown Structure</span><span>12</span></li>
+        <li><span class="indent-1">Project Deliverables</span><span>12</span></li>
+        <li><span>System Analysis &amp; Design</span><span>13</span></li>
+        <li><span class="indent-1">Theories</span><span>13</span></li>
+        <li><span class="indent-1">Analysis and Design</span><span>14</span></li>
+        <li><span class="indent-2">Existing Process</span><span>14</span></li>
+        <li><span class="indent-2">Proposed Process</span><span>14</span></li>
+        <li><span class="indent-2">User Roles and Access Structure</span><span>15</span></li>
+        <li><span class="indent-2">Student Operational Flow</span><span>15</span></li>
+        <li><span class="indent-2">Teacher Operational Flow</span><span>16</span></li>
+        <li><span class="indent-2">Frontend and Backend Technologies</span><span>16</span></li>
+        <li><span class="indent-2">Security and Authentication Design</span><span>16</span></li>
+        <li><span class="indent-2">Gantt Chart</span><span>14</span></li>
+        <li><span class="indent-2">Flowchart</span><span>15</span></li>
+        <li><span class="indent-2">User Guide</span><span>16</span></li>
+        <li><span class="indent-2">Screen Presentation Guide</span><span>17</span></li>
+        <li><span>Conclusion and Recommendation</span><span>17</span></li>
+        <li><span>References</span><span>18</span></li>
+        <li><span>Appendices</span><span>19</span></li>
+      </ul>
+      <div class="page-number">4</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Abstract</div>
+      <h2>Abstract</h2>
+      <p>
+        SCSIT NEXUS Web Application is a browser-based learning management system
+        designed to provide a centralized digital environment for academic activities.
+        The system focuses on organizing learning materials, assignments, quizzes,
+        attendance, online classes, records, and communication tools in a single
+        platform that can be accessed through a web browser. The web application is
+        intended for Salazar Colleges of Science and Institute of Technology and is
+        focused on the needs of Junior High School and Senior High School learners
+        and teachers.
+      </p>
+      <p>
+        The web application supports role-based access for students, teachers, and
+        advisers. Students are provided with a structured dashboard for lessons,
+        assignments, quizzes, live classes, and records, while teachers are provided
+        with tools for managing classes, content, assessments, and monitoring student
+        performance. Through this structure, the system aims to improve academic
+        organization, simplify classroom processes, and support digital learning
+        within the institution.
+      </p>
+      <p>
+        This thesis book presents the documentation of the web application only. It
+        covers the project background, objectives, methodology, scope and limitation,
+        project management, system analysis and design, conclusion, recommendation,
+        references, and appendices.
+      </p>
+      <p>
+        The project also includes backend services that support authentication, data
+        management, attendance-related processing, records handling, file support,
+        notifications, and real-time communication, making the system a complete
+        academic platform rather than a simple static website.
+      </p>
+      <div class="page-number">5</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Acknowledgement</div>
+      <h2>Acknowledgement</h2>
+      <p>
+        The researchers would like to express their sincere gratitude to everyone
+        who contributed to the completion of this project documentation and the
+        development of the SCSIT NEXUS Web Application.
+      </p>
+      <p>
+        Special thanks are extended to our thesis adviser, faculty members, panelists,
+        classmates, friends, and family for their guidance, encouragement, and support
+        throughout the development and documentation process. We also acknowledge the
+        institution for providing the academic environment and resources necessary to
+        complete this project.
+      </p>
+      <p>
+        Above all, we thank Almighty God for wisdom, strength, and perseverance in
+        accomplishing this work.
+      </p>
+      <div class="page-number">6</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Chapter 1</div>
+      <h2>Introduction</h2>
+      <p class="chapter-intro">
+        This chapter presents the background of the project and the main purpose of
+        developing the SCSIT NEXUS Web Application.
+      </p>
+
+      <h3>Overview</h3>
+      <p>
+        SCSIT NEXUS is a web-based learning management application intended to improve
+        the way academic tasks are handled in a digital environment. The system brings
+        together public access pages, secure login, role-based dashboards, learning
+        materials, assignments, quizzes, attendance monitoring, online classes, chat,
+        notifications, and records into a single web platform.
+      </p>
+      <p>
+        Based on the current web implementation, the application is designed for users
+        such as students, teachers, and advisers. Each user is redirected to the
+        proper dashboard after login, allowing access only to the modules relevant
+        to their responsibilities. The public web pages also explicitly position
+        the system as a platform for Salazar Colleges of Science and Institute of
+        Technology, focused on Junior High School and Senior High School operations.
+      </p>
+
+      <h3>Institutional Context</h3>
+      <p>
+        The system is designed for Salazar Colleges of Science and Institute of
+        Technology and reflects the academic environment of Junior High School and
+        Senior High School programs. In this setting, students need a reliable
+        platform for classroom learning, while teachers and advisers need a digital
+        tool for monitoring academic tasks, attendance, submissions, and overall
+        student participation.
+      </p>
+
+      <h3>Target Users</h3>
+      <p>
+        The major users of the web application are students, teachers, and advisers.
+        Students use the platform to consume lessons and submit academic requirements.
+        Teachers use the platform to manage classes, assessments, and instructional
+        resources. Advisers use the platform to oversee assigned sections and monitor
+        student records and learning progress.
+      </p>
+
+      <h3>Problem Statement</h3>
+      <p>
+        Academic information is often distributed across several disconnected methods
+        such as classroom announcements, chat messages, printed notes, and separate
+        file-sharing tools. This can result in lost instructions, unclear deadlines,
+        weak monitoring of submissions, and difficulty in maintaining a centralized
+        academic record. The SCSIT NEXUS web application addresses this problem by
+        providing one organized system for access, learning, submission, and monitoring.
+      </p>
+
+      <h3>Goals and Objectives</h3>
+      <h4>Main Goal</h4>
+      <p>
+        The main goal of the project is to develop a clean, organized, and accessible
+        web application that centralizes academic processes and supports teaching and
+        learning activities in one browser-based platform.
+      </p>
+
+      <h4>Specific Objective</h4>
+      <ol>
+        <li>To provide a secure login system with role-based redirection.</li>
+        <li>To give students access to subjects, lessons, assignments, quizzes, and online classes.</li>
+        <li>To provide teachers with tools for class management and academic monitoring.</li>
+        <li>To organize attendance, records, and communication inside one system.</li>
+        <li>To improve usability through a structured and responsive web interface.</li>
+      </ol>
+
+      <h3>Significance of the Study</h3>
+      <p>
+        The study is significant because it presents a centralized digital platform
+        that can reduce the fragmentation of academic processes in school operations.
+        Instead of relying on separate tools for announcements, assignments, quizzes,
+        live sessions, and progress checking, the system unifies these functions in
+        one interface. For students, this improves accessibility and academic awareness.
+        For teachers and advisers, it improves class management, monitoring, and
+        communication efficiency.
+      </p>
+      <div class="page-number">7</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Chapter 2</div>
+      <h2>Methodology</h2>
+      <p class="chapter-intro">
+        This chapter explains the general process followed in planning, designing,
+        implementing, and documenting the web application.
+      </p>
+      <p>
+        The project followed a development process that involved planning, interface
+        design, implementation, testing, and documentation. The web application was
+        structured into feature-based modules so that each major function of the
+        system could be built and maintained more clearly.
+      </p>
+
+      <h3>Planning Phase</h3>
+      <p>
+        The planning phase involved identifying the academic needs of the intended
+        users, defining the major user roles, and listing the core modules that
+        had to be included in the system. During this phase, the project scope was
+        narrowed to web application features relevant to Junior High School and
+        Senior High School academic processes.
+      </p>
+
+      <h3>Design Phase</h3>
+      <p>
+        In the design phase, the researchers organized the navigation structure,
+        dashboard hierarchy, and module arrangement of the platform. Screen layouts
+        were planned to keep student tasks and teacher management functions easy to
+        reach. Role-based routing was also considered in this phase to ensure that
+        each user type would see only the appropriate pages and controls.
+      </p>
+
+      <h3>Development Phase</h3>
+      <p>
+        During development, the researchers identified the required user roles and
+        mapped the needed modules for each one. Screens and workflows were then
+        designed to support tasks such as login, viewing lessons, handling assignments,
+        managing quizzes, monitoring attendance, and joining online classes.
+      </p>
+
+      <h3>Testing and Documentation Phase</h3>
+      <p>
+        The system was implemented as a modern web frontend and was continuously
+        checked based on functional behavior, navigation flow, and consistency of
+        user access. After development, the project was documented in a structured
+        thesis-book format to support presentation, evaluation, and future revision.
+      </p>
+      <div class="page-number">8</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Chapter 3</div>
+      <h2>Scope &amp; Limitation</h2>
+
+      <h3>Scope</h3>
+      <p>
+        This documentation covers only the web application of SCSIT NEXUS. It includes
+        the public pages, authentication flow, student dashboard modules, teacher
+        dashboard modules, adviser-related access, and the general frontend structure
+        of the system. It is specifically framed around the school context of
+        Salazar Colleges of Science and Institute of Technology for Junior High School
+        and Senior High School use cases.
+      </p>
+      <p>
+        The documented features include lessons, assignments, quizzes, attendance,
+        online classes, notifications, chat, transcript-related pages, and role-based
+        navigation within the web platform.
+      </p>
+
+      <h3>Limitation</h3>
+      <p>
+        This thesis book does not cover the mobile application, backend source code in
+        full detail, deployment infrastructure, or server administration procedures.
+        It also does not include final institutional signatures, school-specific charts,
+        or screenshots that may still need to be inserted before submission.
+      </p>
+      <div class="page-number">9</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Chapter 4</div>
+      <h2>Project Management</h2>
+
+      <h3>Hardware Resources</h3>
+      <table class="resource-table">
+        <tr>
+          <th>Resource</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>Laptop / Desktop Computer</td>
+          <td>Used for frontend development, testing, documentation, and browser-based validation.</td>
+        </tr>
+        <tr>
+          <td>Internet Connection</td>
+          <td>Used for package installation, research, and remote service access when needed.</td>
+        </tr>
+        <tr>
+          <td>Storage Device</td>
+          <td>Used for saving the project files, documentation, and backups.</td>
+        </tr>
+      </table>
+
+      <h3>Software Resources</h3>
+      <table class="resource-table">
+        <tr>
+          <th>Software</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>Next.js</td>
+          <td>Framework used to build the web application pages and routing.</td>
+        </tr>
+        <tr>
+          <td>React</td>
+          <td>Library used for creating reusable user interface components.</td>
+        </tr>
+        <tr>
+          <td>TypeScript</td>
+          <td>Used to improve code structure and maintainability.</td>
+        </tr>
+        <tr>
+          <td>Axios</td>
+          <td>Used for API communication.</td>
+        </tr>
+        <tr>
+          <td>React Query</td>
+          <td>Used for fetching and managing server data.</td>
+        </tr>
+        <tr>
+          <td>Visual Studio Code</td>
+          <td>Used as the development environment.</td>
+        </tr>
+        <tr>
+          <td>Django REST Framework</td>
+          <td>Used by the backend to expose API endpoints consumed by the web application.</td>
+        </tr>
+        <tr>
+          <td>Simple JWT</td>
+          <td>Used for token-based authentication and secure access management.</td>
+        </tr>
+        <tr>
+          <td>Django Channels and Daphne</td>
+          <td>Used for real-time features and WebSocket-capable backend services.</td>
+        </tr>
+        <tr>
+          <td>PostgreSQL Support</td>
+          <td>Provided through <code>psycopg2-binary</code> for database integration in the Django backend.</td>
+        </tr>
+        <tr>
+          <td>Redis</td>
+          <td>Used with <code>channels_redis</code> for message brokering in real-time features.</td>
+        </tr>
+        <tr>
+          <td>Rust Chat Server</td>
+          <td>Used as a separate real-time messaging service for chat-related operations.</td>
+        </tr>
+        <tr>
+          <td>Cloudinary and django-cloudinary-storage</td>
+          <td>Used to support media and asset storage for uploaded educational content and files.</td>
+        </tr>
+        <tr>
+          <td>Gunicorn and WhiteNoise</td>
+          <td>Used in deployment-oriented backend setup for application serving and static file handling.</td>
+        </tr>
+      </table>
+
+      <h3>Work Breakdown Structure</h3>
+      <ol>
+        <li>Project planning and requirements gathering</li>
+        <li>Interface layout and navigation design</li>
+        <li>Authentication and role-based access implementation</li>
+        <li>Student module development</li>
+        <li>Teacher module development</li>
+        <li>Testing and refinement</li>
+        <li>Documentation and thesis preparation</li>
+      </ol>
+
+      <h3>Project Deliverables</h3>
+      <p>
+        The expected outputs of the project include the web frontend, connected backend
+        services, dashboard interfaces for student and teacher roles, documentation files,
+        sample visual materials, and export-ready thesis documents such as PDF and DOCX.
+      </p>
+      <div class="page-number">10</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Chapter 5</div>
+      <h2>System Analysis &amp; Design</h2>
+      <p class="chapter-intro">
+        This chapter discusses the conceptual basis of the system and presents the
+        major design elements of the web application.
+      </p>
+
+      <h3>Theories</h3>
+      <p>
+        The project is based on the concept of a learning management system, where
+        academic resources and activities are centralized into one digital platform.
+        It also applies role-based access control, allowing each user to interact only
+        with the features necessary for their responsibilities.
+      </p>
+      <p>
+        It also reflects the principles of a web-based information system, where
+        centralized records, controlled access, and structured workflows contribute
+        to better consistency, accessibility, and operational efficiency.
+      </p>
+
+      <h3>Analysis and Design</h3>
+      <p>
+        The current web application is organized into public pages and protected
+        dashboard routes. After authentication, users are redirected based on role.
+        Students are given access to academic consumption modules, while teachers and
+        advisers are given management and monitoring tools.
+      </p>
+
+      <h4>Existing Process</h4>
+      <p>
+        In a typical school setup without a centralized learning management system,
+        information may be spread across verbal instructions, printed materials,
+        social messaging, and disconnected classroom tools. This can create delays,
+        missing requirements, and difficulty in tracking deadlines, attendance, or
+        student performance.
+      </p>
+
+      <h4>Proposed Process</h4>
+      <p>
+        The proposed process uses a single web application where public information,
+        user authentication, dashboard access, classroom resources, assessments,
+        attendance, communication, and monitoring are connected in one structured
+        platform. This reduces task fragmentation and creates a clearer academic flow
+        for both students and teachers.
+      </p>
+
+      <h4>User Roles and Access Structure</h4>
+      <p>
+        The application follows role-based access. Student users are redirected to
+        the student dashboard, teacher users are redirected to the teacher dashboard,
+        and adviser users are redirected to the adviser-specific teacher section.
+        This separation improves usability and protects functions that should only
+        be available to authorized users.
+      </p>
+
+      <h4>Student Operational Flow</h4>
+      <ol>
+        <li>The student opens the web application and accesses the login page.</li>
+        <li>The student enters valid credentials and signs in.</li>
+        <li>The system validates the account role and redirects the user to the student dashboard.</li>
+        <li>The student checks enrolled subjects, pending assignments, quizzes, and available lessons.</li>
+        <li>The student opens learning materials, participates in online classes, and submits requirements.</li>
+        <li>The student reviews transcript, attendance, notifications, and progress-related records.</li>
+        <li>The student logs out after completing the needed tasks.</li>
+      </ol>
+
+      <h4>Teacher Operational Flow</h4>
+      <ol>
+        <li>The teacher opens the web application and signs in using a faculty account.</li>
+        <li>The system validates the account role and redirects the teacher to the teacher dashboard.</li>
+        <li>The teacher accesses classes, lessons, assignments, quizzes, attendance, and online classes.</li>
+        <li>The teacher uploads instructional content, creates tasks, and reviews submissions or quiz attempts.</li>
+        <li>The teacher monitors student records, identifies pending work, and manages class-related actions.</li>
+        <li>The teacher or adviser logs out after completing administrative and instructional tasks.</li>
+      </ol>
+
+      <h4>Frontend and Backend Technologies</h4>
+      <p>
+        The project uses a multi-layered architecture composed of a web frontend,
+        a Django-based backend, and a separate real-time chat service. The web
+        frontend is built with Next.js, React, TypeScript, Axios, and React Query.
+        The main backend uses Django 6, Django REST Framework, and Simple JWT for
+        authentication and API handling. Real-time support is enabled through
+        Django Channels, Daphne, Redis, and a dedicated Rust-based chat server
+        implemented with Actix Web, Actix actors, Tokio, and Reqwest.
+      </p>
+      <p>
+        This combined structure allows the SCSIT NEXUS platform to support secure
+        browser access, role-based academic workflows, API-driven data exchange,
+        notifications, and chat-related functionality for Junior High School and
+        Senior High School users of Salazar Colleges of Science and Institute of
+        Technology.
+      </p>
+
+      <h4>Backend Functional Responsibilities</h4>
+      <p>
+        The backend layer is responsible for user authentication, role validation,
+        lesson and academic data delivery, attendance-related processing, assignment
+        and quiz record handling, notification support, file-related services, and
+        coordination with the separate real-time chat server. This makes the platform
+        a complete working academic system rather than a purely visual frontend.
+      </p>
+
+      <h4>Security and Authentication Design</h4>
+      <p>
+        The web application uses authenticated access with login validation and
+        role-based redirection. Based on the implemented stack, token-based security
+        is supported through JWT handling in the backend, while the frontend manages
+        access and refresh behavior to maintain user sessions. This design helps
+        protect academic data and ensures that modules are only visible to the
+        proper users.
+      </p>
+
+      <h4>Gantt Chart</h4>
+      <p>
+        The project development timeline began in February 2026 and was completed on
+        April 23, 2026. The schedule below is arranged by week and reflects your
+        sequence of work, where backend development was started first. Deployment is
+        scheduled from <strong>April 18 to April 23, 2026</strong>.
+      </p>
+      <table class="gantt-table">
+        <tr>
+          <th style="width: 26%;">Project Activity</th>
+          <th class="gantt-week">Feb<br />1-7</th>
+          <th class="gantt-week">Feb<br />8-14</th>
+          <th class="gantt-week">Feb<br />15-21</th>
+          <th class="gantt-week">Feb<br />22-28</th>
+          <th class="gantt-week">Mar<br />1-7</th>
+          <th class="gantt-week">Mar<br />8-14</th>
+          <th class="gantt-week">Mar<br />15-21</th>
+          <th class="gantt-week">Mar<br />22-28</th>
+          <th class="gantt-week">Mar 29<br />Apr 4</th>
+          <th class="gantt-week">Apr<br />5-11</th>
+          <th class="gantt-week">Apr<br />12-17</th>
+          <th class="gantt-week">Apr<br />18-23</th>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Project planning and requirements gathering</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Backend database and API development</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Authentication and role-based access</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Frontend interface and dashboard development</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Student module integration</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Teacher and adviser module integration</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Chat, notifications, and real-time features</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Testing, revisions, and bug fixing</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Documentation and thesis preparation</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-check">&#10003;</td>
+          <td class="gantt-empty"></td>
+        </tr>
+        <tr>
+          <td class="gantt-task small-task">Deployment</td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-empty"></td>
+          <td class="gantt-check">&#10003;</td>
+        </tr>
+      </table>
+
+      <h4>Flowchart</h4>
+      <div class="flowchart">
+        <div class="flow-line">
+          <div class="flow-end">Start</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-box">Open SCSIT NEXUS Web Application</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-box">Display Public Home Page and Login Access</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-box">User Enters Email and Password</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-decision"><span>Are the credentials valid?</span></div>
+          <div class="flow-row">
+            <div class="flow-box">No: Show error message and return to login</div>
+            <div class="flow-box">Yes: Continue to role validation</div>
+          </div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-decision"><span>What is the user role?</span></div>
+          <div class="flow-row">
+            <div class="flow-box">Student: Redirect to Student Dashboard</div>
+            <div class="flow-box">Teacher / Adviser: Redirect to Teacher Dashboard</div>
+          </div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-row">
+            <div class="flow-box">Student accesses subjects, lessons, assignments, quizzes, records, and online classes</div>
+            <div class="flow-box">Teacher accesses classes, lessons, assignments, quizzes, attendance, and monitoring tools</div>
+          </div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-box">User completes academic or management tasks</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-box">User logs out of the system</div>
+          <div class="flow-arrow">&#8595;</div>
+          <div class="flow-end">End</div>
+        </div>
+        <div class="flow-note">
+          Figure: General system flow of the SCSIT NEXUS web application for student and teacher users.
+        </div>
+      </div>
+
+      <h4>User Guide</h4>
+      <p>
+        The web app allows the user to access the system through a browser. Public
+        users may first view landing information pages. Registered users may then
+        log in using valid account credentials.
+      </p>
+      <ol>
+        <li>Open the web application in a browser.</li>
+        <li>Navigate to the login page.</li>
+        <li>Enter a valid email address and password.</li>
+        <li>Wait for the system to verify the user role.</li>
+        <li>Access the correct dashboard based on the user account.</li>
+        <li>Use the available modules such as lessons, assignments, quizzes, attendance, records, or online classes.</li>
+        <li>Log out after completing the required tasks.</li>
+      </ol>
+
+      <h4>Screen Presentation Guide</h4>
+      <p>
+        For thesis presentation purposes, the screenshot sequence may begin with the
+        public landing page, followed by the login interface, then the student dashboard,
+        student learning modules, student online classes, and finally the teacher dashboard.
+        This order presents the system from general access down to role-based academic use.
+      </p>
+
+      <h4>Student Module Summary</h4>
+      <p>
+        The student side of the system focuses on academic participation. It includes
+        subject access, lesson viewing, assignment checking, quiz participation,
+        attendance-related visibility, online class participation, and review of
+        progress or transcript-related records.
+      </p>
+
+      <h4>Teacher Module Summary</h4>
+      <p>
+        The teacher side of the system focuses on academic management. It includes
+        class overview, learning material organization, assignment and quiz handling,
+        attendance monitoring, online class supervision, and review of student-related
+        performance information.
+      </p>
+
+      <h4>Actual Web Page Screenshots</h4>
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/landing-page.png" alt="Sample landing page screenshot" />
+        <div class="figure-caption">Figure 1. Public landing page of the SCSIT NEXUS web application.</div>
+      </div>
+
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/login-page.png" alt="Sample login page screenshot" />
+        <div class="figure-caption">Figure 2. Login page with role-based access to the system.</div>
+      </div>
+
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/student-dashboard.png" alt="Sample student dashboard screenshot" />
+        <div class="figure-caption">Figure 3. Student dashboard showing enrolled subjects and quick academic overview.</div>
+      </div>
+
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/student-lessons.png" alt="Sample student learning materials screenshot" />
+        <div class="figure-caption">Figure 4. Student learning materials module.</div>
+      </div>
+
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/student-assignments.png" alt="Sample student assignments screenshot" />
+        <div class="figure-caption">Figure 5. Student assignments module.</div>
+      </div>
+
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/student-quizzes.png" alt="Sample student quizzes screenshot" />
+        <div class="figure-caption">Figure 6. Student quizzes module.</div>
+      </div>
+
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/student-online-classes.png" alt="Sample student online classes screenshot" />
+        <div class="figure-caption">Figure 7. Student online classes page showing live and upcoming sessions.</div>
+      </div>
+
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/teacher-dashboard.png" alt="Sample teacher dashboard screenshot" />
+        <div class="figure-caption">Figure 8. Teacher dashboard used for class and student monitoring.</div>
+      </div>
+      <div class="page-number">11</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Chapter 6</div>
+      <h2>Conclusion and Recommendation</h2>
+      <p>
+        The SCSIT NEXUS Web Application provides a structured digital platform for
+        academic interaction. Its current implementation shows a practical and organized
+        approach to managing learning materials, assessments, online class sessions,
+        attendance, records, and communication inside one web-based environment.
+      </p>
+      <p>
+        The system is especially aligned with the academic environment of Salazar
+        Colleges of Science and Institute of Technology and with the operational needs
+        of Junior High School and Senior High School users. It is recommended that
+        the final thesis version include actual screenshots, formal institutional names,
+        complete signatories, the official Gantt Chart,
+        the finalized flowchart, and any additional appendix materials required by
+        the school.
+      </p>
+      <div class="page-number">12</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">References</div>
+      <h2>References</h2>
+      <ol>
+        <li>Next.js Documentation. Retrieved from https://nextjs.org/docs</li>
+        <li>React Documentation. Retrieved from https://react.dev</li>
+        <li>TypeScript Documentation. Retrieved from https://www.typescriptlang.org/docs</li>
+        <li>TanStack Query Documentation. Retrieved from https://tanstack.com/query</li>
+        <li>Axios Documentation. Retrieved from https://axios-http.com</li>
+        <li>Django Documentation. Retrieved from https://docs.djangoproject.com</li>
+        <li>Django REST Framework Documentation. Retrieved from https://www.django-rest-framework.org</li>
+        <li>Simple JWT Documentation. Retrieved from https://django-rest-framework-simplejwt.readthedocs.io</li>
+        <li>Django Channels Documentation. Retrieved from https://channels.readthedocs.io</li>
+        <li>Redis Documentation. Retrieved from https://redis.io/docs</li>
+        <li>Actix Web Documentation. Retrieved from https://actix.rs</li>
+        <li>Reqwest Documentation. Retrieved from https://docs.rs/reqwest</li>
+      </ol>
+      <div class="page-number">13</div>
+    </section>
+
+    <section class="page">
+      <div class="chapter-label">Appendices</div>
+      <h2>Appendices</h2>
+      <p>This section may contain the following supporting materials:</p>
+      <ul>
+        <li>System screenshots</li>
+        <li>Gantt Chart image</li>
+        <li>Flowchart image</li>
+        <li>Additional user interface samples</li>
+        <li>Extra project documents required by the institution</li>
+      </ul>
+
+      <div class="line-block">
+        You can add appendix items here one by one once your screenshots and final
+        charts are ready.
+      </div>
+
+      <div class="figure-box">
+        <img class="figure-image" src="./sample-screenshots/landing-page.png" alt="Sample appendix screenshot" />
+        <div class="figure-caption">Appendix Figure A. Supporting visual documentation.</div>
+      </div>
+      <div class="page-number">14</div>
+    </section>
+  </main>
+</body>
+</html>
